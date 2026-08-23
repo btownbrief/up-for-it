@@ -11,7 +11,16 @@ trap 'psql "$CONN" -q -c "drop database if exists $DB;"' EXIT
 P() { psql "$CONN dbname=$DB" -v ON_ERROR_STOP=1 -q -X -t -A "$@"; }
 P -c "create schema if not exists extensions; do \$\$ begin create role anon nologin; exception when duplicate_object then null; end \$\$; do \$\$ begin create role authenticated nologin; exception when duplicate_object then null; end \$\$; create extension if not exists pgcrypto with schema extensions;" >/dev/null
 HASH=$(P -c "select extensions.crypt('test-secret', extensions.gen_salt('bf', 6));")
-sed "s|PASTE-BCRYPT-HASH-HERE|$HASH|" supabase/up-for-it-SETUP.sql > /tmp/uf-setup-test.sql
+# swap whatever hash is baked into uf_mod_hash() for the test secret's
+HASH="$HASH" python3 - <<'PY'
+import os,re
+s=open('supabase/up-for-it-SETUP.sql').read()
+h=os.environ['HASH']
+s2,n=re.subn(r"(function public\.uf_mod_hash\(\) returns text\nlanguage sql immutable as \$\$ select ')[^']*('::text; \$\$;)", lambda m: m.group(1)+h+m.group(2), s)
+assert n==1, n
+open('/tmp/uf-setup-test.sql','w').write(s2)
+PY
+grep -q "$HASH" /tmp/uf-setup-test.sql || { echo "could not swap mod hash"; exit 1; }
 P -f /tmp/uf-setup-test.sql >/dev/null 2>&1
 pass=0; fail=0
 ok() { if [ "$1" = "$2" ]; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: $3 — got [$1] want [$2]"; fi; }

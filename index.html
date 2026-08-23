@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FBF8F2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0A111C" media="(prefers-color-scheme: dark)">
+  <title>Up For It — say what you'd go to in Burlington</title>
+  <meta name="description" content="Twelve quick taps on things to do in Burlington, Vermont. Say what you'd actually go to; when enough neighbors agree, a Btown Brief host makes it happen.">
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Up For It">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Btown Brief">
+  <meta property="og:title" content="Up For It — Burlington">
+  <meta property="og:description" content="Say what you'd go to. Hosts make it happen.">
+  <meta name="twitter:card" content="summary">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="mast" id="mast">
+    <img id="mast-img" alt="" decoding="async" fetchpriority="high">
+    <span class="credit">Burlington, VT</span>
+  </div>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Up For It</h1>
+        <p class="sub">Say what you'd go to. Hosts make it happen.</p>
+      </div>
+      <button class="mine" id="open-mine" type="button">Mine</button>
+    </header>
+
+    <div class="seg" role="group" aria-label="View">
+      <button type="button" id="tab-plans" aria-pressed="true" data-view="plans">Plans</button>
+      <button type="button" id="tab-wishes" aria-pressed="false" data-view="wishes">Wishes</button>
+    </div>
+
+    <!-- js/app.js renders the chosen tab in here -->
+    <div id="home"></div>
+    <p class="status" id="status"></p>
+    <p class="sr-only" id="announce" aria-live="polite"></p>
+
+    <footer class="foot-note">
+      <p>A <a href="https://www.btownbrief.com" rel="noopener">Btown Brief</a> thing. Nothing here is vetted — use your judgment. Show up when you say you will. <a href="#" id="open-how">How this works</a></p>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Sheets are built by js/app.js inside these dialogs -->
+  <dialog class="sheet deck" id="sheet-deck" aria-labelledby="deck-title"><div class="sheet-inner full" id="deck-inner"></div></dialog>
+  <dialog class="sheet" id="sheet-in" aria-labelledby="in-title"><div class="sheet-inner" id="in-inner"></div></dialog>
+  <dialog class="sheet" id="sheet-suggest" aria-labelledby="suggest-title"><div class="sheet-inner" id="suggest-inner"></div></dialog>
+  <dialog class="sheet" id="sheet-mine" aria-labelledby="mine-title"><div class="sheet-inner" id="mine-inner"></div></dialog>
+  <dialog class="sheet" id="sheet-how" aria-labelledby="how-title">
+    <div class="sheet-inner">
+      <div class="grab"></div>
+      <div class="sheet-head"><h2 id="how-title">How this works</h2><button class="close" type="button" data-close>Done</button></div>
+      <ol class="rules">
+        <li>Tap what you'd go to.</li>
+        <li>Five "I'd go" and it tips.</li>
+        <li>A host from the Btown Brief IRL crew picks it up.</li>
+        <li>Say "I'm in" — enough people and it's on.</li>
+        <li>You get one email when it's on and one the day before.</li>
+      </ol>
+      <p class="sheet-foot">This browser is your only identity — no account, no password. Clear it and you start fresh.</p>
+    </div>
+  </dialog>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

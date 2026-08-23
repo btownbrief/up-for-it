@@ -394,7 +394,13 @@ export const DEMO_HOST_KEY = 'deadbeefdeadbeefdeadbeefdeadbeef';
 export const DEMO_HOST_KEY_2 = 'cafebabecafebabecafebabecafebabe';
 export function seedDemo(be, ideas) {
   const now = be.now();
-  const at = (daysAgo, h = 12) => new Date(now - daysAgo * DAY + h * 3600000).toISOString();
+  // daysAgo may be fractional (for "created_at" spacing); h pins a local
+  // clock hour (6.5 = 6:30) so demo plans read like real evenings
+  const at = (daysAgo, h = 12) => {
+    const d = new Date(now - daysAgo * DAY);
+    d.setHours(Math.floor(h), Math.round((h % 1) * 60), 0, 0);
+    return d.toISOString();
+  };
   for (const i of ideas) {
     be.ideas.push({ id: uid(), slug: i.slug, title: i.title, blurb: i.blurb || '', when: i.when, category: i.category, months: i.months || [],
       status: i.exists ? 'exists' : 'live', exists_url: i.exists ? i.exists.url : '', exists_note: i.exists ? i.exists.note : '',

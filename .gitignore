@@ -3,3 +3,4 @@ playtest-out/
 node_modules/
 supabase/.temp/
 supabase/.branches/
+BUILD-BRIEF.md
