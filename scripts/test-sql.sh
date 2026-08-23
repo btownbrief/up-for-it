@@ -21,7 +21,7 @@ assert n==1, n
 open('/tmp/uf-setup-test.sql','w').write(s2)
 PY
 grep -q "$HASH" /tmp/uf-setup-test.sql || { echo "could not swap mod hash"; exit 1; }
-P -f /tmp/uf-setup-test.sql >/dev/null 2>&1
+P -f /tmp/uf-setup-test.sql >/dev/null 2>/tmp/uf-setup-err.log || { echo "setup SQL failed:"; tail -5 /tmp/uf-setup-err.log; exit 1; }
 pass=0; fail=0
 ok() { if [ "$1" = "$2" ]; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: $3 — got [$1] want [$2]"; fi; }
 A() { P -c "set role anon; $1"; }        # run as anon
@@ -111,7 +111,34 @@ ok "$(A "select uf_host_me('$KEY')->>'error';")" "bad_key" "disabled host locked
 A "select uf_mod_host('test-secret','enable','{\"id\":\"$HID\"}');" >/dev/null
 # lockout: 20 bad keys shuts the gate
 for i in $(seq 1 20); do A "select uf_host_me('0000000000000000000000000000000$((i%10))');" >/dev/null; done
-ok "$(A "select uf_host_me('$KEY')->>'error';")" "bad_key" "host gate locks after 20 bad keys"
+ok "$(A "select uf_host_me('00000000ffffffffffffffffffffffff')->>'error';")" "bad_key" "host gate locks a prefix after 20 bad keys"
+ok "$(A "select uf_host_me('$KEY')->>'name';")" "Jonathon" "real key (other prefix) still works"
+
+# --- review round: stuck claimed, on-without-date, cap floor, per-prefix lockout
+P -c "delete from uf_host_fails;" >/dev/null
+KEY2=$(A "select uf_mod_host('test-secret','add','{\"name\":\"Maya\"}')->>'key';")
+I2=$(S "select id from uf_ideas where slug='pinball-co-op-wednesday';")
+P3=$(A "select uf_host_claim('$KEY2', '{\"idea_id\":\"$I2\",\"title\":\"Pinball night\",\"place\":\"Pinball Co-op\",\"starts_at\":\"2030-01-01T23:00:00Z\",\"cap\":4,\"threshold\":2}')->>'id';")
+A "select uf_commit('$P3','$T1','{\"name\":\"A\",\"email\":\"a1@x.io\"}');" >/dev/null; A "select uf_commit('$P3','$T2','{\"name\":\"B\",\"email\":\"b1@x.io\"}');" >/dev/null
+ok "$(S "select status from uf_plans where id='$P3';")" "on" "threshold + date → on"
+A "select uf_commit('$P3','$T3','{\"name\":\"C\",\"email\":\"c1@x.io\"}');" >/dev/null
+ok "$(AE "select uf_host_update('$KEY2','$P3','{\"cap\":2}');")" "cap_too_small" "cap below in_count refused"
+A "select uf_host_update('$KEY2','$P3','{\"starts_at\":null}');" >/dev/null
+ok "$(S "select status||'|'||coalesce(on_at::text,'null')||'|'||notified_on from uf_plans where id='$P3';")" "tipping|null|false" "clearing the date demotes on → tipping"
+A "select uf_host_update('$KEY2','$P3','{\"starts_at\":\"2030-01-02T23:00:00Z\"}');" >/dev/null
+ok "$(S "select status from uf_plans where id='$P3';")" "on" "re-dating re-announces"
+# stuck claimed: simulate a plan that finished via the sweep (on, started long ago)
+P -c "update uf_plans set starts_at = now() - interval '3 days' where id='$P3';" >/dev/null
+A "select uf_plans_public();" >/dev/null
+ok "$(S "select p.status||'|'||i.status from uf_plans p join uf_ideas i on i.id=p.idea_id where p.id='$P3';")" "done|live" "sweep finishes the plan AND releases the idea"
+# cast garbage → clean codes
+ok "$(AE "select uf_host_claim('$KEY2', '{\"title\":\"Cast test plan\",\"place\":\"Here\",\"cap\":\"lots\"}');")" "bad_plan" "garbage cap → bad_plan"
+ok "$(AE "select uf_mod_host('test-secret','disable','{\"id\":\"nope\"}');")" "not_found" "garbage host id → not_found"
+# per-prefix lockout: 20 misses on one prefix don't lock a different key
+for i in $(seq 1 20); do A "select uf_host_me('1111111100000000000000000000000$((i%10))');" >/dev/null; done
+ok "$(A "select uf_host_me('$KEY2')->>'name';")" "Maya" "other prefixes unaffected by a locked prefix"
+ok "$(A "select uf_host_me('11111111ffffffffffffffffffffffff')->>'error';")" "bad_key" "locked prefix stays locked"
+
 # seeds re-run is idempotent
 P -f /tmp/uf-setup-test.sql >/dev/null 2>&1
 ok "$(S "select count(*) from uf_ideas_public() x, jsonb_array_elements(x) e;")" "31" "re-run keeps 30 seeds + 1 approved"

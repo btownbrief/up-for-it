@@ -192,8 +192,9 @@ test('backend: host key, claim, commit → on, waitlist, update, done, release, 
   await be.rpc('uf_mod_host', { p_secret: 'test-secret', p_action: 'disable', p_payload: { id: hid } });
   assert.equal((await be.rpc('uf_host_me', { p_key: key })).error, 'bad_key');
   await be.rpc('uf_mod_host', { p_secret: 'test-secret', p_action: 'enable', p_payload: { id: hid } });
-  for (let i = 0; i < 20; i++) await be.rpc('uf_host_me', { p_key: T(String(i % 10)) });
-  assert.equal((await be.rpc('uf_host_me', { p_key: key })).error, 'bad_key');
+  for (let i = 0; i < 20; i++) await be.rpc('uf_host_me', { p_key: '00000000' + String(i % 10).repeat(24) });
+  assert.equal((await be.rpc('uf_host_me', { p_key: '00000000' + 'f'.repeat(24) })).error, 'bad_key'); // that prefix rests
+  assert.equal((await be.rpc('uf_host_me', { p_key: key })).name, 'Jonathon');                          // others don't
 });
 test('backend: sweep releases a stale undated empty claim; on → done after a day', async () => {
   const { be, tick } = fresh();
@@ -209,6 +210,31 @@ test('backend: sweep releases a stale undated empty claim; on → done after a d
   tick(2 * 86400000);
   await be.rpc('uf_plans_public');
   assert.equal(be.plans.find((p) => p.id === p2).status, 'done');
+});
+test('backend: review-round rules — cap floor, on→tipping on date clear, stuck-claimed release, prefix lockout, showed range', async () => {
+  const { be, tick } = fresh();
+  const idea = be.ideas[3].id;
+  const { key } = await be.rpc('uf_mod_host', { p_secret: 'test-secret', p_action: 'add', p_payload: { name: 'Maya' } });
+  const { id } = await be.rpc('uf_host_claim', { p_key: key, p_plan: { idea_id: idea, title: 'Pinball night', place: 'Pinball Co-op', starts_at: '2030-01-01T23:00:00Z', cap: 4, threshold: 2 } });
+  for (const [c, n] of [['a', 'A'], ['b', 'B'], ['c', 'C']]) await be.rpc('uf_commit', { p_plan: id, p_token: T(c), p_commit: { name: n, email: `${n}@x.io` } });
+  const p = be.plans.find((x) => x.id === id);
+  assert.equal(p.status, 'on');
+  await rejects(be.rpc('uf_host_update', { p_key: key, p_plan: id, p_patch: { cap: 2 } }), 'cap_too_small');
+  await be.rpc('uf_host_update', { p_key: key, p_plan: id, p_patch: { starts_at: null } });
+  assert.equal(p.status, 'tipping'); assert.equal(p.on_at, null); assert.equal(p.notified_on, false);
+  assert.equal((await be.rpc('uf_host_update', { p_key: key, p_plan: id, p_patch: { starts_at: '2030-01-02T23:00:00Z' } })).on, true);
+  // finished via sweep → idea released
+  p.starts_at = new Date(be.now() - 3 * 86400000).toISOString();
+  await be.rpc('uf_plans_public');
+  assert.equal(p.status, 'done'); assert.equal(be.ideas[3].status, 'live');
+  await rejects(be.rpc('uf_host_action', { p_key: key, p_plan: id, p_action: 'done', p_payload: { showed: 900 } }), 'bad_showed');
+  // per-prefix lockout
+  for (let i = 0; i < 20; i++) await be.rpc('uf_host_me', { p_key: '11111111' + String(i % 10).repeat(24) });
+  assert.equal((await be.rpc('uf_host_me', { p_key: '11111111' + 'f'.repeat(24) })).error, 'bad_key');
+  assert.equal((await be.rpc('uf_host_me', { p_key: key })).name, 'Maya');
+  // mod add rejects a 1-char title like the SQL check constraint
+  await rejects(be.rpc('uf_mod_idea', { p_secret: 'test-secret', p_idea: null, p_action: 'add', p_patch: { title: 'x' } }), 'bad_patch');
+  tick(0);
 });
 test('demo seed: whole loop visible, host key works', async () => {
   const be = seedDemo(new FakeBackend({ now: () => NOW, modSecret: 'demo' }), SEED);

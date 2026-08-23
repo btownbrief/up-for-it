@@ -1,4 +1,4 @@
-// uf-notify — the three emails Up For It sends. Without this function (or
+// uf-notify — the four emails Up For It sends. Without this function (or
 // without RESEND_API_KEY) nothing breaks: people still see everything in
 // the app; they just aren't told by email. The client fires and forgets
 // (js/net.js notify()), so every failure here is silent from the browser.
@@ -11,7 +11,7 @@
 //   kind 'remind'  (no id)    daily cron: "Tomorrow: …" to everyone in on a
 //                              plan that starts in 10–38 hours
 //
-// Idempotent via three booleans on uf_plans (notified_claim, notified_on,
+// Idempotent via four booleans on uf_plans (notified_claim, notified_on, notified_cancel,
 // reminded): the first caller flips the flag atomically; everyone else gets
 // {sent:false, why:'already'}. If Resend fails outright the flag is flipped
 // back so a later call retries. Emails are never logged.
@@ -54,7 +54,7 @@ const ok = (body: unknown) => new Response(JSON.stringify(body), { headers: { ..
 type Plan = {
   id: string; idea_id: string | null; host_id: string; title: string; place: string; detail: string;
   starts_at: string | null; cap: number; threshold: number; status: string; meetup_url: string;
-  notified_claim: boolean; notified_on: boolean; reminded: boolean;
+  notified_claim: boolean; notified_on: boolean; reminded: boolean; notified_cancel: boolean;
 };
 type Mail = { from: string; to: string[]; subject: string; text: string };
 
@@ -109,13 +109,13 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   try {
     const { kind, plan_id } = await req.json().catch(() => ({}));
-    if (!['claimed', 'on', 'remind'].includes(kind)) return ok({ sent: false, why: 'bad_kind' });
+    if (!['claimed', 'on', 'remind', 'cancelled'].includes(kind)) return ok({ sent: false, why: 'bad_kind' });
     if (kind !== 'remind' && (typeof plan_id !== 'string' || !/^[0-9a-f-]{36}$/.test(plan_id))) return ok({ sent: false, why: 'bad_id' });
     const key = Deno.env.get('RESEND_API_KEY');
     if (!key) return ok({ sent: false, why: 'no_key' });
     const from = Deno.env.get('UF_NOTIFY_FROM') || 'Up For It <hello@btownbrief.com>';
     const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    const PLAN_COLS = 'id, idea_id, host_id, title, place, detail, starts_at, cap, threshold, status, meetup_url, notified_claim, notified_on, reminded';
+    const PLAN_COLS = 'id, idea_id, host_id, title, place, detail, starts_at, cap, threshold, status, meetup_url, notified_claim, notified_on, reminded, notified_cancel';
     const hostName = async (id: string) => {
       const { data } = await db.from('uf_hosts').select('name').eq('id', id).maybeSingle();
       return data?.name || 'A Btown Brief IRL host';
@@ -171,6 +171,48 @@ Deno.serve(async (req) => {
       return ok({ sent: true, count, failed: to.length - count });
     }
 
+    // ---------------------------------------------------------- cancelled
+    // Only people who said "I'm in" hear about a cancellation, and only if
+    // the plan had actually been announced (on) or had people in it.
+    if (kind === 'cancelled') {
+      const { data: plan } = await db.from('uf_plans').select(PLAN_COLS).eq('id', plan_id).eq('status', 'cancelled').maybeSingle() as { data: Plan | null };
+      if (!plan) return ok({ sent: false, why: 'not_found' });
+      const { data: claimed } = await db.from('uf_plans').update({ notified_cancel: true })
+        .eq('id', plan.id).eq('notified_cancel', false).select('id').maybeSingle();
+      if (!claimed) return ok({ sent: false, why: 'already' });
+      const unclaim = () => db.from('uf_plans').update({ notified_cancel: false }).eq('id', plan.id);
+      const [host, { data: commits }] = await Promise.all([
+        hostName(plan.host_id),
+        db.from('uf_commits').select('email').eq('plan_id', plan.id),
+      ]);
+      const when = plan.starts_at ? formatWhen(plan.starts_at) : 'date TBD';
+      const text = [
+        `Hi — this one is called off:`,
+        '',
+        `  ${plan.title}`,
+        `  ${when} · ${plan.place}`,
+        '',
+        `${host} had to cancel it. Sorry — nothing to do on your end.`,
+        '',
+        `See what else is tipping: ${APP_URL}`,
+        '',
+        '— Btown Brief',
+      ].join('\n');
+      const subject = `Called off: ${plan.title}`;
+      const seen = new Set<string>();
+      const mails: Mail[] = [];
+      for (const c of (commits || []) as { email: string }[]) {
+        const e = String(c.email || '').trim().toLowerCase();
+        if (!e.includes('@') || seen.has(e)) continue;
+        seen.add(e);
+        mails.push({ from, to: [e], subject, text });
+      }
+      if (!mails.length) return ok({ sent: true, count: 0 });
+      const count = await send(key, mails);
+      if (!count) { await unclaim(); return ok({ sent: false, why: 'resend' }); }
+      return ok({ sent: true, count, failed: mails.length - count });
+    }
+
     // ----------------------------------------------------------------- on
     if (kind === 'on') {
       const { data: plan } = await db.from('uf_plans').select(PLAN_COLS).eq('id', plan_id).eq('status', 'on').maybeSingle() as { data: Plan | null };
@@ -189,7 +231,7 @@ Deno.serve(async (req) => {
       const inN = rows.filter((c) => c.status === 'in').length;
       const when = formatWhen(plan.starts_at);
       const body = (wait: boolean) => [
-        wait ? `Hi — you're on the waitlist for this one; we'll email if a spot opens. Here's the plan:`
+        wait ? `Hi — you're on the waitlist for this one. If a spot opens you move up automatically; check Mine in the app (we don't email for that). Here's the plan:`
              : `Hi — it's on. Here's the plan:`,
         '',
         `  ${plan.title}`,

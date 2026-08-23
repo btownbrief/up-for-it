@@ -22,8 +22,9 @@
 -- Privacy shape (load-bearing): emails live in uf_people and uf_commits
 -- and are returned by NO public or host RPC. Hosts see counts and first
 -- names of people who are "in" — never emails. Only the edge function
--- (service role) reads emails, to send the three messages: "a host picked
--- this up", "it's on", "tomorrow".
+-- (service role) reads emails, to send the four messages: "a host picked
+-- this up", "it's on", "tomorrow", and "called off" (only to people who
+-- were in on a plan that was already on).
 --
 -- Honest threat model, same as the fleet: the anon key is public, so a
 -- determined prankster can mint tokens and tap junk. One tap per idea per
@@ -107,9 +108,11 @@ create table if not exists public.uf_plans (
   on_at timestamptz,
   notified_claim boolean not null default false,
   notified_on boolean not null default false,
-  reminded boolean not null default false
+  reminded boolean not null default false,
+  notified_cancel boolean not null default false
 );
 create index if not exists uf_plans_status on public.uf_plans (status, starts_at);
+alter table public.uf_plans add column if not exists notified_cancel boolean not null default false;
 create index if not exists uf_plans_host on public.uf_plans (host_id, created_at desc);
 
 create table if not exists public.uf_commits (
@@ -124,7 +127,8 @@ create table if not exists public.uf_commits (
 create index if not exists uf_commits_token on public.uf_commits (token_hash);
 
 create table if not exists public.uf_mod_fails (at timestamptz not null default now());
-create table if not exists public.uf_host_fails (at timestamptz not null default now());
+create table if not exists public.uf_host_fails (at timestamptz not null default now(), prefix text not null default '');
+alter table public.uf_host_fails add column if not exists prefix text not null default '';
 
 alter table public.uf_ideas enable row level security;
 alter table public.uf_taps enable row level security;
@@ -198,6 +202,10 @@ begin
      and not exists (select 1 from uf_commits c where c.plan_id = p.id);
   update uf_plans set status = 'done'
    where status = 'on' and starts_at is not null and starts_at < now() - interval '24 hours';
+  -- an idea whose plan finished, vanished, or was cancelled any other way goes back in the deck
+  update uf_ideas i set status = 'live'
+   where i.status = 'claimed'
+     and not exists (select 1 from uf_plans q where q.idea_id = i.id and q.status in ('tipping','on'));
   delete from uf_plans where status = 'cancelled' and created_at < now() - interval '30 days';
   delete from uf_ideas where status = 'rejected' and created_at < now() - interval '30 days';
 end $$;
@@ -426,18 +434,18 @@ end $$;
 
 create or replace function public.uf_uncommit(p_plan uuid, p_token text) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare h text; v_next text;
+declare h text;
 begin
   perform uf_check_token(p_token);
   h := uf_hash(p_token);
   perform pg_advisory_xact_lock(hashtext('ufp|' || p_plan::text));
   delete from uf_commits where plan_id = p_plan and token_hash = h;
-  -- first on the waitlist moves up
-  select token_hash into v_next from uf_commits where plan_id = p_plan and status = 'wait' order by created_at limit 1;
-  if v_next is not null and (select count(*) from uf_commits where plan_id = p_plan and status = 'in')
-       < (select cap from uf_plans where id = p_plan) then
-    update uf_commits set status = 'in' where plan_id = p_plan and token_hash = v_next;
-  end if;
+  -- the waitlist moves up, in order, as far as the cap allows
+  update uf_commits c set status = 'in'
+    from (select token_hash from uf_commits where plan_id = p_plan and status = 'wait' order by created_at
+           limit greatest(0, coalesce((select cap from uf_plans where id = p_plan), 0)
+                             - (select count(*) from uf_commits where plan_id = p_plan and status = 'in'))) w
+   where c.plan_id = p_plan and c.token_hash = w.token_hash;
   return '{}'::jsonb;
 end $$;
 
@@ -453,9 +461,11 @@ declare v_id uuid;
 begin
   if coalesce(p_key, '') !~ '^[a-f0-9]{32}$' then return null; end if;
   delete from uf_host_fails where at < now() - interval '15 minutes';
-  if (select count(*) from uf_host_fails) >= 20 then return null; end if;
+  -- the counter is per key prefix, so random guessing can't lock the real
+  -- hosts out; 20 misses on one prefix rest that prefix for 15 minutes
+  if (select count(*) from uf_host_fails where prefix = left(p_key, 8)) >= 20 then return null; end if;
   select id into v_id from uf_hosts where key_hash = uf_hash(p_key) and active;
-  if v_id is null then insert into uf_host_fails default values; end if;
+  if v_id is null then insert into uf_host_fails (prefix) values (left(p_key, 8)); end if;
   return v_id;
 end $$;
 revoke all on function public.uf_host_id(text) from public, anon, authenticated;
@@ -511,7 +521,7 @@ begin
   perform uf_sweep();
   return jsonb_build_object(
     'mine', coalesce((select jsonb_agg(uf_plan_public(p) || jsonb_build_object(
-        'notified_claim', p.notified_claim, 'notified_on', p.notified_on, 'reminded', p.reminded,
+        'notified_claim', p.notified_claim, 'notified_on', p.notified_on, 'reminded', p.reminded, 'notified_cancel', p.notified_cancel,
         'people', coalesce((select jsonb_agg(jsonb_build_object('name', c.name, 'status', c.status, 'created_at', c.created_at) order by c.created_at)
                               from uf_commits c where c.plan_id = p.id), '[]'::jsonb))
       order by p.status, p.starts_at nulls last, p.created_at desc)
@@ -524,7 +534,7 @@ end $$;
 -- cleaned fields or raises bad_plan.
 create or replace function public.uf_plan_fields(p jsonb)
 returns table (title text, place text, detail text, category text, starts_at timestamptz, cap int, threshold int, meetup_url text, idea_id uuid)
-language plpgsql immutable as $$
+language plpgsql stable as $$
 begin
   title := uf_clean(p->>'title', 56);
   place := uf_clean(p->>'place', 80);
@@ -532,11 +542,11 @@ begin
   category := case when uf_valid_category(p->>'category') then p->>'category' else 'social' end;
   begin
     starts_at := case when coalesce(p->>'starts_at', '') = '' then null else (p->>'starts_at')::timestamptz end;
+    cap := coalesce((p->>'cap')::int, 8);
+    threshold := coalesce((p->>'threshold')::int, 5);
+    idea_id := case when coalesce(p->>'idea_id', '') = '' then null else (p->>'idea_id')::uuid end;
   exception when others then raise exception using message = 'bad_plan'; end;
-  cap := coalesce((p->>'cap')::int, 8);
-  threshold := coalesce((p->>'threshold')::int, 5);
   meetup_url := left(btrim(coalesce(p->>'meetup_url', '')), 200);
-  idea_id := case when coalesce(p->>'idea_id', '') = '' then null else (p->>'idea_id')::uuid end;
   if length(title) < 4 or length(place) < 2 or cap < 2 or cap > 60 or threshold < 2 or threshold > cap
      or (meetup_url <> '' and meetup_url !~* '^https://\S+$') then
     raise exception using message = 'bad_plan';
@@ -589,9 +599,16 @@ begin
     'starts_at', case when p_patch ? 'starts_at' then p_patch->>'starts_at' else p.starts_at::text end,
     'cap', coalesce(p_patch->>'cap', p.cap::text), 'threshold', coalesce(p_patch->>'threshold', p.threshold::text),
     'meetup_url', coalesce(p_patch->>'meetup_url', p.meetup_url)));
+  if f.cap < (select count(*) from uf_commits where plan_id = p_plan and status = 'in') then
+    raise exception using message = 'cap_too_small';
+  end if;
   update uf_plans set title = f.title, place = f.place, detail = f.detail, category = f.category,
          starts_at = f.starts_at, cap = f.cap, threshold = f.threshold, meetup_url = f.meetup_url,
-         reminded = case when f.starts_at is distinct from p.starts_at then false else reminded end
+         reminded = case when f.starts_at is distinct from p.starts_at then false else reminded end,
+         -- taking the date off an "on" plan puts it back to tipping; re-dating re-announces
+         status = case when f.starts_at is null and p.status = 'on' then 'tipping' else status end,
+         on_at = case when f.starts_at is null and p.status = 'on' then null else on_at end,
+         notified_on = case when f.starts_at is null and p.status = 'on' then false else notified_on end
    where id = p_plan;
   -- cap grew: promote from the waitlist in order
   update uf_commits c set status = 'in'
@@ -634,7 +651,9 @@ begin
     if p.idea_id is not null then update uf_ideas set status = 'live' where id = p.idea_id and status = 'claimed'; end if;
   elsif p_action = 'done' then
     if p.status not in ('on','done') then raise exception using message = 'not_found'; end if;
-    update uf_plans set status = 'done', showed = nullif(p_payload->>'showed', '')::int where id = p_plan;
+    begin
+      update uf_plans set status = 'done', showed = nullif(p_payload->>'showed', '')::int where id = p_plan;
+    exception when others then raise exception using message = 'bad_showed'; end;
     -- the idea goes back in the deck; its tip stays so hosts can run it again
     if p.idea_id is not null then update uf_ideas set status = 'live' where id = p.idea_id and status = 'claimed'; end if;
   else
@@ -744,7 +763,7 @@ begin
     insert into uf_hosts (name, email, key_hash) values (v_name, uf_clean_email(p_payload->>'email'), uf_hash(v_key)) returning id into v_id;
     return jsonb_build_object('id', v_id, 'key', v_key);
   end if;
-  v_id := (p_payload->>'id')::uuid;
+  begin v_id := (p_payload->>'id')::uuid; exception when others then raise exception using message = 'not_found'; end;
   if not exists (select 1 from uf_hosts where id = v_id) then raise exception using message = 'not_found'; end if;
   if p_action = 'rekey' then update uf_hosts set key_hash = uf_hash(v_key), active = true where id = v_id; return jsonb_build_object('key', v_key);
   elsif p_action = 'disable' then update uf_hosts set active = false where id = v_id;

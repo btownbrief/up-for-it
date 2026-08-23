@@ -109,6 +109,7 @@ export function backend() {
 // baseline (people still see everything in the app).
 //   kind 'claimed' — a host picked up an idea: tell the idea's yes-pile
 //   kind 'on'      — a plan is official: tell everyone who's in
+//   kind 'cancelled' — an on plan was called off: tell everyone who was in
 export function notify(kind, planId) {
   if (isDemo() || !planId) return;
   try {
@@ -132,6 +133,8 @@ export function explain(err) {
     not_found: "That one's gone.",
     already_claimed: 'Another host already has this one.',
     needs_date: 'Set a date first.',
+    cap_too_small: "The cap can't go below the number already in.",
+    bad_showed: 'How many came — a number from 0 to 500.',
     has_people: "People are already in — cancel it instead of releasing it.",
     bad_tap: "Pass, maybe, or go?",
     bad_finish: "That email doesn't look right.",

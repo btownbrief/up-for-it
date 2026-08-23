@@ -20,6 +20,7 @@ const rows = ideas.map((i) => {
   if (!WHENS.has(i.when)) throw new Error(`when ${i.slug}`);
   if (!CATS.has(i.category)) throw new Error(`category ${i.slug}`);
   const months = (i.months || []).filter((m) => Number.isInteger(m) && m >= 1 && m <= 12);
+  if ((i.origin || '').length > 60) throw new Error(`origin too long ${i.slug}`);
   const ex = i.exists;
   if (ex && (!/^https:\/\/\S+$/.test(ex.url) || (ex.note || '').length > 80)) throw new Error(`exists ${i.slug}`);
   return `(${q(i.slug)}, ${q(i.title)}, ${q(i.blurb || '')}, ${q(i.when)}, ${q(i.category)}, '{${months.join(',')}}'::int[], ` +

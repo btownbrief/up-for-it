@@ -105,7 +105,7 @@ function sheetHead(titleId, title, sheetId, closeLabel = 'Cancel') {
 // A field with pill options. single: {v}; multi: Set.
 function optField({ label, options, value, multi = false, onChange, hint, name }) {
   const box = h('div', { class: 'field', dataset: { field: name } });
-  const opts = h('div', { class: 'opts', role: multi ? 'group' : 'radiogroup', 'aria-label': label });
+  const opts = h('div', { class: 'opts', role: 'group', 'aria-label': label });
   const render = () => {
     clear(opts);
     for (const o of options) {

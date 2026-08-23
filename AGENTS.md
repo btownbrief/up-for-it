@@ -21,7 +21,7 @@ changes in plain language. Plain static site, no build step, ES modules.
   an email, never which; `uf_mod_queue` shows counts (host emails in
   `uf_hosts` are Stephen's contact list and do show there, secret-gated).
   The only thing that reads reader emails in bulk is the edge function
-  `uf-notify` (service role), for the three emails. `uf_plans_public()`
+  `uf-notify` (service role), for the four emails (claimed · on · tomorrow · called off). `uf_plans_public()`
   and `uf_ideas_public()` are the only public projections; never add a
   private column to either. Public text fields are URL-stripped server-side
   (`uf_clean`) so the board can't become a link farm; links live only in

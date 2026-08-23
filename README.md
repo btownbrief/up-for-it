@@ -19,10 +19,11 @@ whole loop, in the app's own words:
 - **Host desk** (`host.html`) — demand by momentum (this week's "I'd go"
   taps, not all-time), claim, set a date, make it official, mark it done.
   Stephen mints host keys in the back room (`mod.html`).
-- **Three emails, that's all** — "a host picked this up", "it's on",
-  "tomorrow". No accounts, no DMs, no swipe gestures, no GPS.
+- **Four emails, that's all** — "a host picked this up", "it's on",
+  "tomorrow", and "called off" (only to people who were in). No accounts,
+  no DMs, no swipe gestures, no GPS.
 
-Live (once deployed): https://play.btownbrief.com/up-for-it/ — try
+Live: https://play.btownbrief.com/up-for-it/ — try
 `?demo=1` for a seeded sample that saves nothing to the server or this device
 (host desk: `host.html?demo=1`, key `deadbeefdeadbeefdeadbeefdeadbeef`;
 back room: `mod.html?demo=1`, secret `demo`).
@@ -43,7 +44,7 @@ security model as the rest of the Btown fleet.
 | `data/ideas.json` | the seed deck (30 ideas; edit here, then `node scripts/build-seed-sql.mjs`) |
 | `data/meetup.json` | the IRL Meetup calendar, refreshed every 6h by `meetup.yml` (output, don't hand-edit) |
 | `supabase/up-for-it-SETUP.sql` | the whole backend; paste once |
-| `supabase/functions/uf-notify/` | the three emails (Resend): claimed · it's on · tomorrow |
+| `supabase/functions/uf-notify/` | the four emails (Resend): claimed · it's on · tomorrow · called off |
 | `scripts/test-core.mjs` | core + backend-mirror tests (`node --test`) |
 | `scripts/test-sql.sh` | runs the SQL on a local Postgres as the anon role, end to end |
 | `scripts/build-seed-sql.mjs` | regenerates the seed block at the bottom of the SQL from `data/ideas.json` |

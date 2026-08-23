@@ -72,7 +72,7 @@
       </section>
 
       <footer class="foot-note">
-        <p>Hosts see counts and first names, never emails. Emails go out from the app: one when you claim, one when it's on, one the day before. Questions → Stephen.</p>
+        <p>Hosts see counts and first names, never emails. Emails go out from the app: one when you claim, one when it's on, one the day before, and one if you call it off. Questions → Stephen.</p>
         <h3>Host ground rules</h3>
         <ul class="rules">
           <li>Meet in public places.</li>
@@ -185,7 +185,8 @@
     (function readFragment() {
       const m = /[#&]key=([a-f0-9]{32})\b/i.exec(location.hash || '');
       if (m) {
-        keyStore.set(m[1].toLowerCase());
+        // validated by enter() before it replaces any key this device already has
+        window.__ufLinkKey = m[1].toLowerCase();
         history.replaceState(null, '', location.pathname + location.search);
       }
     })();
@@ -411,6 +412,7 @@
       try {
         await be.rpc('uf_host_action', { p_key: KEY, p_plan: plan.id, p_action: action, p_payload: payload || {} });
         if (action === 'on') notify('on', plan.id);
+        if (action === 'cancel') notify('cancelled', plan.id);
         if (after) toast(after);
         await load();
       } catch (e) { toast(explain(e)); }
@@ -456,7 +458,7 @@
       if (p.status === 'on' || p.status === 'done') {
         actions.append(small(p.status === 'done' ? 'Fix how many came' : 'Happened', p.status === 'on' ? 'primary' : '', () => inlinePrompt(slot, {
           label: 'How many came?', type: 'number', min: 0, max: 500, inputmode: 'numeric', value: p.showed != null ? String(p.showed) : '',
-          parse: (v) => { const n = Number.parseInt(v, 10); return Number.isInteger(n) && n >= 0 ? n : undefined; }, bad: 'A whole number.',
+          parse: (v) => { const n = Number.parseInt(v, 10); return Number.isInteger(n) && n >= 0 && n <= 500 ? n : undefined; }, bad: 'A whole number, 0 to 500.',
           onSave: (n) => act(p, 'done', { showed: n }, `Marked as happened · ${n} came`),
         })));
       }
@@ -467,7 +469,7 @@
           onYes: () => act(p, 'release', {}, 'Released.'),
         })));
         actions.append(small('Call it off', 'danger', () => inlineConfirm(slot, {
-          text: ppl.length ? `Call it off? The ${plural(ppl.length, 'person', 'people')} who are in get told.` : 'Call it off?', yes: 'Yes, call it off',
+          text: ppl.length ? `Call it off? The ${plural(ppl.length, 'person', 'people')} who are in get one email saying so.` : 'Call it off?', yes: 'Yes, call it off',
           onYes: () => act(p, 'cancel', {}, 'Called off.'),
         })));
       }
@@ -508,6 +510,11 @@
     // ----------------------------------------------------------- boot
     (async () => {
       const k = keyStore.get();
+      const linked = window.__ufLinkKey;
+      if (linked) {
+        try { await be.rpc('uf_host_me', { p_key: linked }); await enter(linked); return; }
+        catch { /* a bad link never evicts a good saved key */ }
+      }
       if (HEX.test(k || '')) await enter(k);
       else showGate('');
     })();

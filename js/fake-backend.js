@@ -48,6 +48,8 @@ export class FakeBackend {
       }
       if (p.status === 'on' && p.starts_at && Date.parse(p.starts_at) < this.now() - DAY) p.status = 'done';
     }
+    // an idea whose plan finished or vanished any other way goes back in the deck
+    for (const i of this.ideas) if (i.status === 'claimed' && !this.livePlanFor(i.id)) i.status = 'live';
     this.plans = this.plans.filter((p) => !(p.status === 'cancelled' && Date.parse(p.created_at) < this.now() - 30 * DAY));
     this.ideas = this.ideas.filter((i) => !(i.status === 'rejected' && Date.parse(i.created_at) < this.now() - 30 * DAY));
   }
@@ -200,10 +202,11 @@ export class FakeBackend {
   // ------------------------------------------------------------- hosts
   hostId(key) {
     if (!HEX32.test(key || '')) return null;
-    this.hostFails = this.hostFails.filter((t) => t > this.now() - 15 * 60000);
-    if (this.hostFails.length >= RATE.gateFails) return null;
+    this.hostFails = this.hostFails.filter((f) => f.at > this.now() - 15 * 60000);
+    const prefix = key.slice(0, 8); // per-prefix, like the SQL
+    if (this.hostFails.filter((f) => f.prefix === prefix).length >= RATE.gateFails) return null;
     const h = this.hosts.find((x) => x.key === key && x.active);
-    if (!h) { this.hostFails.push(this.now()); return null; }
+    if (!h) { this.hostFails.push({ at: this.now(), prefix }); return null; }
     return h.id;
   }
   op_host_me({ p_key }) {
@@ -238,7 +241,7 @@ export class FakeBackend {
       mine: this.plans.filter((p) => p.host_id === id && (['tipping', 'on'].includes(p.status) || Date.parse(p.created_at) > this.now() - 60 * DAY))
         .sort((a, b) => rank[a.status] - rank[b.status] || (a.starts_at ? Date.parse(a.starts_at) : Infinity) - (b.starts_at ? Date.parse(b.starts_at) : Infinity))
         .map((p) => ({
-          ...this.publicPlan(p), notified_claim: p.notified_claim, notified_on: p.notified_on, reminded: p.reminded,
+          ...this.publicPlan(p), notified_claim: p.notified_claim, notified_on: p.notified_on, reminded: p.reminded, notified_cancel: Boolean(p.notified_cancel),
           people: this.commits.filter((c) => c.plan_id === p.id).sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at)).map((c) => ({ name: c.name, status: c.status, created_at: c.created_at })),
         })),
       others: this.plans.filter((p) => p.host_id !== id && ['tipping', 'on'].includes(p.status)).map((p) => this.publicPlan(p)),
@@ -261,7 +264,7 @@ export class FakeBackend {
       i.status = 'claimed'; category = i.category || category;
     }
     const id = uid();
-    this.plans.push({ id, idea_id: f.idea_id, host_id: hostId, title: f.title, place: f.place, detail: f.detail, category, starts_at: f.starts_at, cap: f.cap, threshold: f.threshold, status: 'tipping', meetup_url: f.meetup_url, showed: null, created_at: this.iso(), tipped_at: null, on_at: null, notified_claim: false, notified_on: false, reminded: false });
+    this.plans.push({ id, idea_id: f.idea_id, host_id: hostId, title: f.title, place: f.place, detail: f.detail, category, starts_at: f.starts_at, cap: f.cap, threshold: f.threshold, status: 'tipping', meetup_url: f.meetup_url, showed: null, created_at: this.iso(), tipped_at: null, on_at: null, notified_claim: false, notified_on: false, reminded: false, notified_cancel: false });
     return { id };
   }
   op_host_update({ p_key, p_plan, p_patch }) {
@@ -275,7 +278,9 @@ export class FakeBackend {
       meetup_url: p_patch.meetup_url ?? p.meetup_url,
     };
     const f = this.planFields(merged);
+    if (f.cap < this.commits.filter((c) => c.plan_id === p.id && c.status === 'in').length) throw new BackendError('cap_too_small');
     if (f.starts_at !== p.starts_at) p.reminded = false;
+    if (!f.starts_at && p.status === 'on') { p.status = 'tipping'; p.on_at = null; p.notified_on = false; }
     Object.assign(p, { title: f.title, place: f.place, detail: f.detail, category: validCategory(merged.category) ? merged.category : p.category, starts_at: f.starts_at, cap: f.cap, threshold: f.threshold, meetup_url: f.meetup_url });
     this.promote(p.id);
     const n = this.commits.filter((c) => c.plan_id === p.id && c.status === 'in').length;
@@ -300,7 +305,9 @@ export class FakeBackend {
       this.plans = this.plans.filter((x) => x !== p); releaseIdea();
     } else if (p_action === 'done') {
       if (!['on', 'done'].includes(p.status)) throw new BackendError('not_found');
-      p.status = 'done'; p.showed = p_payload.showed === '' || p_payload.showed == null ? null : Number(p_payload.showed); releaseIdea();
+      const showed = p_payload.showed === '' || p_payload.showed == null ? null : Number(p_payload.showed);
+      if (showed != null && !(Number.isInteger(showed) && showed >= 0 && showed <= 500)) throw new BackendError('bad_showed');
+      p.status = 'done'; p.showed = showed; releaseIdea();
     } else throw new BackendError('bad_action');
     return {};
   }
@@ -330,6 +337,7 @@ export class FakeBackend {
     if (!this.modOk(p_secret)) return { error: 'bad_secret' };
     const months = Array.isArray(p_patch.months) ? p_patch.months.map(Number).filter((m) => Number.isInteger(m) && m >= 1 && m <= 12) : null;
     if (p_action === 'add') {
+      if (cleanText(p_patch.title, 56).length < 4) throw new BackendError('bad_patch');
       const id = uid();
       this.ideas.push({ id, slug: null, title: cleanText(p_patch.title, 56), blurb: cleanText(p_patch.blurb, 120), when: ['weeknight', 'sat-am', 'sat-pm', 'sunday', 'any'].includes(p_patch.when) ? p_patch.when : 'any', category: validCategory(p_patch.category) ? p_patch.category : 'social', months: months || [], status: 'live', exists_url: '', exists_note: '', origin: 'editor', source: 'seed', token: null, tipped_at: null, created_at: this.iso() });
       return { id };
@@ -344,7 +352,7 @@ export class FakeBackend {
       if (!/^https:\/\/\S+$/i.test(p_patch.url || '')) throw new BackendError('bad_patch');
       i.status = 'exists'; i.exists_url = String(p_patch.url).trim().slice(0, 200); i.exists_note = cleanText(p_patch.note, 80);
     } else if (p_action === 'edit') {
-      if (cleanText(p_patch.title, 56)) i.title = cleanText(p_patch.title, 56);
+      if (cleanText(p_patch.title, 56).length >= 4) i.title = cleanText(p_patch.title, 56);
       if ('blurb' in p_patch) i.blurb = cleanText(p_patch.blurb, 120);
       if (['weeknight', 'sat-am', 'sat-pm', 'sunday', 'any'].includes(p_patch.when)) i.when = p_patch.when;
       if (validCategory(p_patch.category)) i.category = p_patch.category;
