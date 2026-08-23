@@ -46,9 +46,18 @@ changes in plain language. Plain static site, no build step, ES modules.
   `?demo=1` runs the whole thing against `FakeBackend` with seeded ideas,
   plans, hosts (`DEMO_HOST_KEY`) and mod secret `'demo'`, and saves nothing.
 - **Email goes out from one place and is idempotent.** `uf-notify` flips
-  `notified_claim` / `notified_on` / `reminded` atomically before sending and
-  flips them back if Resend fails. If you add a fourth message, add a fourth
-  flag — never re-send on a client retry. Never log addresses.
+  `notified_claim` / `notified_on` / `notified_cancel` / `reminded` on the plan
+  atomically before sending and flips them back if Resend fails; "it's on"
+  also flips `uf_commits.notified` per person, so a late "I'm in" on an
+  already-on plan gets the email (client pokes kind `on` again) without
+  anyone getting it twice. If you add a message, add a flag — never re-send
+  on a client retry. Never log addresses.
+- **Times are Eastern, on purpose.** A bare `YYYY-MM-DDTHH:MM` from the
+  desk's date input means Burlington wall-clock time whatever zone the host's
+  phone is in (`core.parseWhen` / `wallToMs` / `msToWall`); plans store ISO
+  UTC; `formatWhen` and the emails render in `America/New_York`. The daily
+  reminder picks plans on *tomorrow's Eastern calendar date*, not a
+  hours-from-now window.
 - **Design doctrine: one thing on screen, many dimensions → few controls.**
   A new facet goes on the card's meta line, not in a new filter control.
   Category chips are the only filter on Wishes. Counts stay hidden before the

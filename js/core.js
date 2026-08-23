@@ -91,10 +91,45 @@ export const isUuid = (s) => UUID_RE.test(String(s ?? ''));
 const HTTPS_RE = /^https:\/\/\S+$/i;
 export const validLink = (s) => HTTPS_RE.test(String(s ?? '').trim());
 export const cleanEmail = (s) => String(s ?? '').trim().toLowerCase().slice(0, LIMITS.email);
-// 'YYYY-MM-DDTHH:MM' (what <input type=datetime-local> gives) or full ISO
+// Plans live in Burlington, so a wall-clock time with no zone on it
+// ('YYYY-MM-DDTHH:MM', what <input type=datetime-local> gives) means
+// Eastern time — whatever zone the host's phone happens to be in. Full ISO
+// strings with a Z or offset are taken as written.
+export const TZ = 'America/New_York';
+const WALL_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/;
+function zoneParts(ms, tz = TZ) {
+  const f = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  });
+  const o = {};
+  for (const p of f.formatToParts(new Date(ms))) o[p.type] = p.value;
+  return { y: +o.year, mo: +o.month, d: +o.day, h: +o.hour % 24, mi: +o.minute };
+}
+// Wall clock in tz → epoch ms. Two passes handle the DST offset change.
+export function wallToMs(s, tz = TZ) {
+  const m = WALL_RE.exec(String(s ?? '').trim());
+  if (!m) return NaN;
+  const [y, mo, d, h, mi] = m.slice(1, 6).map(Number);
+  const want = Date.UTC(y, mo - 1, d, h, mi);
+  let guess = want;
+  for (let i = 0; i < 2; i++) {
+    const p = zoneParts(guess, tz);
+    guess += want - Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi);
+  }
+  return guess;
+}
+// Epoch/ISO → 'YYYY-MM-DDTHH:MM' wall clock in tz (what the desk's input shows).
+export function msToWall(iso, tz = TZ) {
+  const ms = typeof iso === 'number' ? iso : Date.parse(String(iso ?? ''));
+  if (!Number.isFinite(ms)) return '';
+  const p = zoneParts(ms, tz);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${p.y}-${pad(p.mo)}-${pad(p.d)}T${pad(p.h)}:${pad(p.mi)}`;
+}
 export function parseWhen(s) {
   if (s == null || s === '') return null;
-  const ms = Date.parse(String(s));
+  const str = String(s).trim();
+  const ms = WALL_RE.test(str) ? wallToMs(str) : Date.parse(str);
   return Number.isFinite(ms) ? ms : NaN;
 }
 
@@ -292,7 +327,7 @@ export function meetupDescription(plan, { appUrl = 'https://play.btownbrief.com/
 }
 
 // ------------------------------------------------------------ formatting
-export function formatWhen(iso, { tz = 'America/New_York' } = {}) {
+export function formatWhen(iso, { tz = TZ } = {}) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   const day = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: tz });

@@ -32,7 +32,7 @@ export class FakeBackend {
     this.people = new Map(); // token → {email, name, whens, created_at}
     this.hosts = [];     // {id, name, email, key, active, created_at}
     this.plans = [];     // {id, idea_id, host_id, title, place, detail, category, starts_at, cap, threshold, status, meetup_url, showed, created_at, tipped_at, on_at, notified_claim, notified_on, reminded}
-    this.commits = [];   // {plan_id, token, name, email, status, created_at}
+    this.commits = [];   // {plan_id, token, name, email, status, notified, created_at}
     this.modFails = []; this.hostFails = [];
   }
   iso(ms = this.now()) { return new Date(ms).toISOString(); }
@@ -174,7 +174,7 @@ export class FakeBackend {
     const inN = this.commits.filter((c) => c.plan_id === p_plan && c.status === 'in').length;
     let status;
     if (mine) { status = mine.status; mine.name = v.value.name; mine.email = v.value.email; }
-    else { status = inN >= p.cap ? 'wait' : 'in'; this.commits.push({ plan_id: p_plan, token: p_token, name: v.value.name, email: v.value.email, status, created_at: this.iso() }); }
+    else { status = inN >= p.cap ? 'wait' : 'in'; this.commits.push({ plan_id: p_plan, token: p_token, name: v.value.name, email: v.value.email, status, notified: false, created_at: this.iso() }); }
     const pe = this.person(p_token); pe.email = v.value.email; pe.name = v.value.name;
     const n = this.commits.filter((c) => c.plan_id === p_plan && c.status === 'in').length;
     let wentOn = false;

@@ -9,7 +9,7 @@ import {
   cleanText, looksLikeEmail, validToken, isUuid,
   validateTap, validateFinish, validateSuggestion, validateCommit, validatePlan,
   deckOrder, inSeason, ideasView, plansView, ideaStatus, planState, planProgress,
-  wantsOrder, heat, meetupDescription, formatWhen, timeAgo, mastheadFor,
+  wantsOrder, heat, meetupDescription, formatWhen, timeAgo, mastheadFor, parseWhen, wallToMs, msToWall,
 } from '../js/core.js';
 import { FakeBackend, BackendError, seedDemo, DEMO_HOST_KEY } from '../js/fake-backend.js';
 
@@ -95,6 +95,25 @@ test('host helpers', () => {
   const d = meetupDescription({ title: 'Sunset paddle', place: 'North Beach', starts_at: '2026-09-04T22:30:00Z', in_count: 6, cap: 8, host_name: 'Stephen' });
   assert.match(d, /Sunset paddle\n\nFri, Sep 4 · 6:30pm · North Beach/); assert.match(d, /6 neighbors said/); assert.match(d, /Cap is 8/);
   assert.equal(formatWhen('2026-09-04T23:00:00Z'), 'Fri, Sep 4 · 7pm');
+});
+
+test('wall-clock times are Eastern no matter the device zone', () => {
+  // EDT (UTC-4) in September, EST (UTC-5) in December
+  assert.equal(new Date(wallToMs('2026-09-04T18:30')).toISOString(), '2026-09-04T22:30:00.000Z');
+  assert.equal(new Date(wallToMs('2026-12-04T18:30')).toISOString(), '2026-12-04T23:30:00.000Z');
+  // the hour the clocks fall back (Nov 1 2026): 1:30am resolves, doesn't NaN
+  assert.ok(Number.isFinite(wallToMs('2026-11-01T01:30')));
+  assert.ok(Number.isNaN(wallToMs('nope')));
+  assert.equal(msToWall('2026-09-04T22:30:00.000Z'), '2026-09-04T18:30');
+  assert.equal(msToWall('2026-12-04T23:30:00.000Z'), '2026-12-04T18:30');
+  assert.equal(msToWall(wallToMs('2026-10-20T07:05')), '2026-10-20T07:05');
+  // parseWhen: bare input = Eastern; ISO with zone = as written; empty = null
+  assert.equal(parseWhen('2026-09-04T18:30'), Date.parse('2026-09-04T22:30:00Z'));
+  assert.equal(parseWhen('2026-09-04T18:30:00Z'), Date.parse('2026-09-04T18:30:00Z'));
+  assert.equal(parseWhen(''), null);
+  assert.ok(Number.isNaN(parseWhen('soon')));
+  const v = validatePlan({ title: 'Sunset paddle', place: 'Oakledge', starts_at: '2026-09-04T18:30' });
+  assert.equal(v.value.starts_at, '2026-09-04T22:30:00.000Z');
   assert.equal(timeAgo(new Date(NOW - 3 * 3600000).toISOString(), NOW), '3h ago');
   assert.equal(mastheadFor(0).id, 'winter'); assert.equal(mastheadFor(9).id, 'fall'); assert.equal(mastheadFor(6).id, 'summer');
 });

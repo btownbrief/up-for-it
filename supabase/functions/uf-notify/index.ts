@@ -7,14 +7,19 @@
 //                              "I'd go" pile (people who left an email),
 //                              minus anyone already in on the plan
 //   kind 'on'      {plan_id}  a plan is official → tell everyone who's in
-//                              (waitlisted folks get their own line)
+//                              (waitlisted folks get their own line). Called
+//                              again later (someone joins an on plan) it
+//                              sends the same email only to people who
+//                              haven't had it yet (uf_commits.notified).
+//   kind 'cancelled' {plan_id} an on plan was called off → tell everyone
 //   kind 'remind'  (no id)    daily cron: "Tomorrow: …" to everyone in on a
-//                              plan that starts in 10–38 hours
+//                              plan dated tomorrow (Eastern calendar day)
 //
 // Idempotent via four booleans on uf_plans (notified_claim, notified_on, notified_cancel,
-// reminded): the first caller flips the flag atomically; everyone else gets
-// {sent:false, why:'already'}. If Resend fails outright the flag is flipped
-// back so a later call retries. Emails are never logged.
+// reminded) plus uf_commits.notified per person: the first caller flips the
+// flag atomically; everyone else gets {sent:false, why:'already'}. If Resend
+// fails outright the flag is flipped back so a later call retries. Emails
+// are never logged.
 //
 // Runs with the service role (default for edge functions) — the ONLY thing
 // in the fleet that reads uf_people.email / uf_commits.email.
@@ -57,6 +62,27 @@ type Plan = {
   notified_claim: boolean; notified_on: boolean; reminded: boolean; notified_cancel: boolean;
 };
 type Mail = { from: string; to: string[]; subject: string; text: string };
+
+// Eastern wall clock ↔ epoch, same as core.js wallToMs (two passes cover the
+// DST offset change). Used to find "tomorrow" by Burlington's calendar.
+function zoneParts(ms: number) {
+  const f = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const o: Record<string, string> = {};
+  for (const p of f.formatToParts(new Date(ms))) o[p.type] = p.value;
+  return { y: +o.year, mo: +o.month, d: +o.day, h: +o.hour % 24, mi: +o.minute };
+}
+function wallToMs(y: number, mo: number, d: number, h = 0, mi = 0): number {
+  const want = Date.UTC(y, mo - 1, d, h, mi);
+  let guess = want;
+  for (let i = 0; i < 2; i++) { const p = zoneParts(guess); guess += want - Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi); }
+  return guess;
+}
+// [start of tomorrow, start of the day after) in Eastern time, as ISO.
+function tomorrowBounds(nowMs: number): { lo: string; hi: string } {
+  const t = zoneParts(nowMs);
+  const day = (n: number) => { const d = new Date(Date.UTC(t.y, t.mo - 1, t.d + n)); return wallToMs(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()); };
+  return { lo: new Date(day(1)).toISOString(), hi: new Date(day(2)).toISOString() };
+}
 
 // Same shape as core.js formatWhen: "Thu, Sep 4 · 6:30pm" (or "· 6pm").
 function formatWhen(iso: string | null): string {
@@ -214,20 +240,24 @@ Deno.serve(async (req) => {
     }
 
     // ----------------------------------------------------------------- on
+    // First call after a plan goes on: flip notified_on, email everyone who's
+    // in (or waitlisted), mark those commits notified. Later calls (someone
+    // joined after it was on): email only commits still un-notified. Either
+    // way nobody gets this email twice.
     if (kind === 'on') {
       const { data: plan } = await db.from('uf_plans').select(PLAN_COLS).eq('id', plan_id).eq('status', 'on').maybeSingle() as { data: Plan | null };
       if (!plan) return ok({ sent: false, why: 'not_found' });
       if (!plan.starts_at) return ok({ sent: false, why: 'needs_date' });
       const { data: claimed } = await db.from('uf_plans').update({ notified_on: true })
         .eq('id', plan.id).eq('notified_on', false).select('id').maybeSingle();
-      if (!claimed) return ok({ sent: false, why: 'already' });
-      const unclaim = () => db.from('uf_plans').update({ notified_on: false }).eq('id', plan.id);
+      const announce = Boolean(claimed);
 
+      type Row = { token_hash: string; email: string; status: string; notified: boolean };
       const [host, { data: commits }] = await Promise.all([
         hostName(plan.host_id),
-        db.from('uf_commits').select('email, status').eq('plan_id', plan.id),
+        db.from('uf_commits').select('token_hash, email, status, notified').eq('plan_id', plan.id),
       ]);
-      const rows = (commits || []) as { email: string; status: string }[];
+      const rows = (commits || []) as Row[];
       const inN = rows.filter((c) => c.status === 'in').length;
       const when = formatWhen(plan.starts_at);
       const body = (wait: boolean) => [
@@ -248,29 +278,54 @@ Deno.serve(async (req) => {
         '— Btown Brief',
       ].filter((l) => l !== null).join('\n');
       const subject = `It's on: ${plan.title} · ${when}`;
-      const seen = new Set<string>();
-      const mails: Mail[] = [];
-      for (const c of rows) {
-        const e = String(c.email || '').trim().toLowerCase();
-        if (!e.includes('@') || seen.has(e)) continue;
-        seen.add(e);
-        mails.push({ from, to: [e], subject, text: body(c.status === 'wait') });
+      const mailsFor = (list: Row[]) => {
+        const seen = new Set<string>();
+        const mails: Mail[] = [];
+        for (const c of list) {
+          const e = String(c.email || '').trim().toLowerCase();
+          if (!e.includes('@') || seen.has(e)) continue;
+          seen.add(e);
+          mails.push({ from, to: [e], subject, text: body(c.status === 'wait') });
+        }
+        return mails;
+      };
+      const markNotified = (list: Row[], v: boolean) => list.length
+        ? db.from('uf_commits').update({ notified: v }).eq('plan_id', plan.id).in('token_hash', list.map((r) => r.token_hash))
+        : Promise.resolve();
+
+      if (announce) {
+        const mails = mailsFor(rows);
+        if (!mails.length) { await markNotified(rows, true); return ok({ sent: true, count: 0 }); }
+        const count = await send(key, mails);
+        if (!count) { await db.from('uf_plans').update({ notified_on: false }).eq('id', plan.id); return ok({ sent: false, why: 'resend' }); }
+        await markNotified(rows, true);
+        return ok({ sent: true, count, failed: mails.length - count });
       }
+
+      // already announced → welcome anyone who joined since
+      const late = rows.filter((c) => !c.notified);
+      if (!late.length) return ok({ sent: false, why: 'already' });
+      const { data: took } = await db.from('uf_commits').update({ notified: true })
+        .eq('plan_id', plan.id).eq('notified', false).in('token_hash', late.map((r) => r.token_hash))
+        .select('token_hash') as { data: { token_hash: string }[] | null };
+      const mine = new Set((took || []).map((r) => r.token_hash));
+      const toSend = late.filter((r) => mine.has(r.token_hash));
+      if (!toSend.length) return ok({ sent: false, why: 'already' });
+      const mails = mailsFor(toSend);
       if (!mails.length) return ok({ sent: true, count: 0 });
       const count = await send(key, mails);
-      if (!count) { await unclaim(); return ok({ sent: false, why: 'resend' }); }
-      return ok({ sent: true, count, failed: mails.length - count });
+      if (!count) { await markNotified(toSend, false); return ok({ sent: false, why: 'resend' }); }
+      return ok({ sent: true, count, failed: mails.length - count, late: true });
     }
 
     // ------------------------------------------------------------- remind
-    // Tomorrow's plans: anything on that starts in 10–38 hours from now.
-    // Run once a day (remind.yml, 9:10am ET) so every plan lands in that
-    // window exactly once.
-    const now = Date.now();
-    const lo = new Date(now + 10 * 3600000).toISOString();
-    const hi = new Date(now + 38 * 3600000).toISOString();
+    // Tomorrow's plans: anything on whose start falls on tomorrow's Eastern
+    // calendar date, so "Tomorrow:" is literally true (an 11pm start tonight
+    // is not tomorrow). Run once a day (remind.yml, 9:10am ET); each plan is
+    // reminded once (reminded flag; edits to the date reset it).
+    const { lo, hi } = tomorrowBounds(Date.now());
     const { data: due } = await db.from('uf_plans').select(PLAN_COLS)
-      .eq('status', 'on').eq('reminded', false).gte('starts_at', lo).lte('starts_at', hi) as { data: Plan[] | null };
+      .eq('status', 'on').eq('reminded', false).gte('starts_at', lo).lt('starts_at', hi) as { data: Plan[] | null };
     let plans = 0, emails = 0;
     for (const plan of due || []) {
       const { data: claimed } = await db.from('uf_plans').update({ reminded: true })

@@ -125,6 +125,9 @@ create table if not exists public.uf_commits (
   primary key (plan_id, token_hash)
 );
 create index if not exists uf_commits_token on public.uf_commits (token_hash);
+-- notified: this person has had the "it's on" email (set by uf-notify; lets a
+-- late "I'm in" on an already-on plan get the email without re-sending to all)
+alter table public.uf_commits add column if not exists notified boolean not null default false;
 
 create table if not exists public.uf_mod_fails (at timestamptz not null default now());
 create table if not exists public.uf_host_fails (at timestamptz not null default now(), prefix text not null default '');

@@ -561,7 +561,7 @@ function openIn(plan) {
       if (r && r.status === 'wait') toast("You're on the waitlist.");
       else if ((r && r.on) || plan.status === 'on') toast("You're in — it's on.");
       else toast("You're in. We'll email you when it's on.");
-      if (r && r.on && plan.status !== 'on') notify('on', plan.id);
+      if (r && r.on) notify('on', plan.id); // announces once, then welcomes anyone who joined after
       await load();
     } catch (err) {
       $('in-err').textContent = explain(err);

@@ -1,5 +1,5 @@
 # Once a day, ask the uf-notify edge function to send "Tomorrow: …" to
-# everyone who's in on a plan that starts in 10–38 hours. 13:10 UTC is
+# everyone who's in on a plan dated tomorrow (Eastern). 13:10 UTC is
 # 9:10am Eastern (8:10am when the clocks are on standard time — fine).
 #
 # SUPABASE_ANON_KEY is the publishable key from js/net.js. It is NOT a

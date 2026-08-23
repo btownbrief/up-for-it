@@ -3,6 +3,8 @@
 // piece of text goes in through textContent (h() appends strings as text
 // nodes), never innerHTML, so a title like "<b>hi</b>" stays literal.
 
+import { msToWall } from './core.js';
+
 // h('div', { class: 'x', onclick: fn, disabled: true }, 'text', child, [kids])
 export function h(tag, attrs = {}, ...kids) {
   const el = document.createElement(tag);
@@ -132,11 +134,9 @@ export function clearErrorsOnInput(form) {
 // "5 people", "1 person"
 export const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-// datetime-local wants local 'YYYY-MM-DDTHH:MM'; plans carry ISO (UTC).
+// datetime-local wants 'YYYY-MM-DDTHH:MM'; plans carry ISO (UTC). The desk
+// shows and reads Eastern wall-clock time regardless of the phone's zone
+// (core.parseWhen does the other direction).
 export function toLocalInput(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return msToWall(iso);
 }

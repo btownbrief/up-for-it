@@ -75,6 +75,8 @@ ok "$(S "select uf_idea_public(i)->>'host_name' from uf_ideas i where id='$IDEA'
 ok "$(AE "select uf_commit('$PLAN','$T1','{\"name\":\"Pri\"}');")" "bad_commit" "email required"
 ok "$(A "select uf_commit('$PLAN','$T1','{\"name\":\"Pri\",\"email\":\"p@x.io\"}')->>'status';")" "in" "first in"
 A "select uf_commit('$PLAN','$T2','{\"name\":\"Sam\",\"email\":\"s@x.io\"}');" >/dev/null
+ok "$(S "select count(*) from uf_commits where plan_id='$PLAN' and notified = false;")" "2" "commits start un-notified (uf-notify flips per person)"
+ok "$(S "select count(*) from information_schema.columns where table_name='uf_commits' and column_name='notified' and column_default='false';")" "1" "notified defaults false"
 ok "$(A "select uf_commit('$PLAN','$T3','{\"name\":\"Lee\",\"email\":\"l@x.io\"}')->>'on';")" "false" "threshold met but undated → not on"
 ok "$(S "select status||'|'||(tipped_at is not null) from uf_plans where id='$PLAN';")" "tipping|true" "plan tipped, still tipping"
 # host sets a date → goes on
