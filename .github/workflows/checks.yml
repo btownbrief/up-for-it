@@ -1,0 +1,22 @@
+# Core + fake-backend tests, a syntax check on every module, and a JSON
+# sanity check on the seed deck, on every push/PR.
+name: checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Core and backend-mirror tests
+        run: node --test scripts/test-core.mjs
+      - name: Syntax-check every module and script
+        run: for f in js/*.js scripts/*.mjs; do node --check "$f"; done
+      - name: Seed deck is valid JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('data/ideas.json','utf8'))"

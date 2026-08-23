@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#FBF8F2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0A111C" media="(prefers-color-scheme: dark)">
+  <title>Up For It — host desk</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/desk.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Host desk</h1>
+        <p class="hi" id="hi" hidden></p>
+        <p class="sub">What people want <span class="arrow">→</span> what you host</p>
+      </div>
+      <div class="right">
+        <span class="brand">Up For It · Btown Brief IRL</span>
+      </div>
+    </header>
+
+    <section class="gate card" id="gate" hidden>
+      <h2>Paste your host key</h2>
+      <p>Stephen texts each host a link that opens this desk. If you got here without it, paste the key from that text.</p>
+      <form id="gate-form">
+        <label class="sr-only" for="key">Host key</label>
+        <input class="input" id="key" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="32 letters and numbers" maxlength="40">
+        <button class="btn primary" type="submit">Open the desk</button>
+        <button class="btn" type="button" id="forget">Forget this device</button>
+        <p class="form-err" id="gate-err" role="alert"></p>
+      </form>
+    </section>
+
+    <p class="status" id="status" aria-live="polite"></p>
+
+    <div id="desk" hidden>
+      <section class="sec" aria-labelledby="h-wants">
+        <div class="sec-head"><h2 id="h-wants">What people want</h2></div>
+        <p class="stats" id="wants-stats"></p>
+        <div class="two-col">
+          <div>
+            <div class="wants" id="wants"></div>
+            <details class="fold" id="cold-fold" hidden>
+              <summary id="cold-summary">No taps yet</summary>
+              <div class="wants" id="cold"></div>
+            </details>
+          </div>
+          <aside class="heat-wrap sticky" aria-labelledby="h-heat">
+            <h3 id="h-heat">When people are free for what</h3>
+            <div class="heat-scroll"><table class="heat" id="heat"></table></div>
+            <p class="caption">Deeper teal = more of the people who want it are free then.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="sec" aria-labelledby="h-plans">
+        <div class="sec-head">
+          <h2 id="h-plans">My plans</h2>
+          <button class="btn" id="float" type="button">Float your own idea</button>
+        </div>
+        <div id="plans"></div>
+        <h3>Others' plans</h3>
+        <ul class="one-liners" id="others"></ul>
+      </section>
+
+      <footer class="foot-note">
+        <p>Hosts see counts and first names, never emails. Emails go out from the app: one when you claim, one when it's on, one the day before. Questions → Stephen.</p>
+        <h3>Host ground rules</h3>
+        <ul class="rules">
+          <li>Meet in public places.</li>
+          <li>Cap it honestly.</li>
+          <li>If you can't make it, cancel here so people get told.</li>
+          <li>You are the face of it — show up early.</li>
+        </ul>
+        <p class="fine">A Btown Brief thing.</p>
+      </footer>
+    </div>
+  </main>
+
+  <!-- claim / float / edit a plan -->
+  <dialog class="sheet" id="sheet-plan" aria-labelledby="sheet-plan-title">
+    <div class="sheet-inner">
+      <div class="grab" aria-hidden="true"></div>
+      <div class="sheet-head">
+        <h2 id="sheet-plan-title">Claim it</h2>
+        <button class="close" type="button" data-close>Close</button>
+      </div>
+      <p class="sheet-sub" id="sheet-plan-sub"></p>
+      <form id="plan-form" novalidate>
+        <div class="field" data-field="title">
+          <label class="label" for="f-title">Title</label>
+          <input class="input" id="f-title" name="title" maxlength="56" autocomplete="off">
+          <div class="err"></div>
+        </div>
+        <div class="field" data-field="category" id="f-category-field" hidden>
+          <label class="label" for="f-category">Category</label>
+          <select class="input" id="f-category" name="category"></select>
+          <div class="err"></div>
+        </div>
+        <div class="field" data-field="place">
+          <label class="label" for="f-place">Place</label>
+          <input class="input" id="f-place" name="place" maxlength="80" placeholder="Where exactly people will find you" autocomplete="off">
+          <div class="err"></div>
+        </div>
+        <div class="field" data-field="detail">
+          <label class="label" for="f-detail">Details</label>
+          <textarea class="input" id="f-detail" name="detail" maxlength="200" placeholder="What to bring, where exactly to meet, what it costs"></textarea>
+          <div class="hint"><span id="f-detail-count">0</span>/200</div>
+          <div class="err"></div>
+        </div>
+        <div class="field" data-field="starts_at">
+          <label class="label" for="f-starts">Date &amp; time</label>
+          <input class="input" id="f-starts" name="starts_at" type="datetime-local">
+          <div class="toggle">
+            <div><div class="t-label">Needs a date</div><div class="t-hint">I'll set it once people are in</div></div>
+            <button class="switch" type="button" role="switch" aria-checked="false" id="f-nodate" aria-label="Needs a date"></button>
+          </div>
+          <div class="err"></div>
+        </div>
+        <div class="two-up">
+          <div class="field" data-field="cap">
+            <label class="label" for="f-cap">Cap</label>
+            <input class="input" id="f-cap" name="cap" type="number" inputmode="numeric" min="2" max="60" value="8">
+            <div class="err"></div>
+          </div>
+          <div class="field" data-field="threshold">
+            <label class="label" for="f-threshold">Threshold</label>
+            <input class="input" id="f-threshold" name="threshold" type="number" inputmode="numeric" min="2" max="60" value="5">
+            <div class="hint">It's on once this many are in</div>
+            <div class="err"></div>
+          </div>
+        </div>
+        <div class="field" data-field="meetup_url">
+          <label class="label" for="f-meetup">Meetup link <span class="hint" style="display:inline">(optional)</span></label>
+          <input class="input" id="f-meetup" name="meetup_url" type="url" inputmode="url" placeholder="https://www.meetup.com/…" autocomplete="off">
+          <div class="err"></div>
+        </div>
+        <p class="form-err" id="plan-err" role="alert"></p>
+        <div class="actions">
+          <span class="sheet-foot" id="plan-foot"></span>
+          <button class="btn primary" type="submit" id="plan-submit">Claim it</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module">
+    import { backend, explain, notify, isDemo, savedHostKey } from './js/net.js';
+    import { DEMO_HOST_KEY } from './js/fake-backend.js';
+    import {
+      WHENS, CATEGORIES, whenLabel, whenShort, categoryLabel, validatePlan, wantsOrder, heat,
+      planState, meetupDescription, formatWhen, PLAN_CAP, PLAN_THRESHOLD, LIMITS,
+    } from './js/core.js';
+    import { h, $, clear, toast, say, inlineConfirm, inlinePrompt, copyText, wireSheet, setFieldErrors, clearErrorsOnInput, plural, toLocalInput } from './js/desk.js';
+
+    const be = backend();
+    const demo = isDemo();
+    // In demo the key lives only in this tab, so trying the demo never
+    // overwrites a real host's saved key on the same phone.
+    let memKey = '';
+    const keyStore = {
+      get: () => (demo ? memKey : savedHostKey.get()),
+      set: (k) => { if (demo) memKey = k; else savedHostKey.set(k); },
+    };
+    const HEX = /^[a-f0-9]{32}$/;
+    let KEY = '';
+    let me = null;
+    let wants = null;   // last uf_host_wants payload
+    let plans = null;   // last uf_host_plans payload
+
+    // ----------------------------------------------------------- gate
+    // host.html#key=<hex> is what Stephen texts. Read it once, keep it,
+    // and take it out of the address bar so it doesn't end up in a
+    // screenshot or a shared link.
+    (function readFragment() {
+      const m = /[#&]key=([a-f0-9]{32})\b/i.exec(location.hash || '');
+      if (m) {
+        keyStore.set(m[1].toLowerCase());
+        history.replaceState(null, '', location.pathname + location.search);
+      }
+    })();
+
+    function showGate(err) {
+      $('gate').hidden = false;
+      $('desk').hidden = true;
+      $('hi').hidden = true;
+      $('gate-err').textContent = err || '';
+      if (!$('key').value && demo) $('key').value = DEMO_HOST_KEY;
+      say('');
+    }
+    async function enter(key) {
+      key = String(key || '').trim().toLowerCase();
+      if (!HEX.test(key)) { showGate('A host key is 32 letters and numbers. Paste the whole thing.'); return; }
+      say('Opening…');
+      try {
+        me = await be.rpc('uf_host_me', { p_key: key });
+      } catch (e) {
+        if (e.code === 'bad_key') { keyStore.set(''); showGate(explain(e)); return; }
+        showGate(''); say(explain(e)); $('status').classList.add('bad'); return;
+      }
+      KEY = key;
+      keyStore.set(key);
+      $('gate').hidden = true;
+      $('gate-err').textContent = '';
+      $('hi').textContent = `Hi ${me.name}`;
+      $('hi').hidden = false;
+      $('desk').hidden = false;
+      await load();
+    }
+    $('gate-form').addEventListener('submit', (e) => { e.preventDefault(); enter($('key').value); });
+    $('forget').addEventListener('click', () => { keyStore.set(''); KEY = ''; $('key').value = ''; showGate('Forgotten. This device no longer has a host key.'); });
+
+    // ----------------------------------------------------------- load
+    async function load() {
+      say('Loading…');
+      $('status').classList.remove('bad');
+      try {
+        [wants, plans] = await Promise.all([
+          be.rpc('uf_host_wants', { p_key: KEY }),
+          be.rpc('uf_host_plans', { p_key: KEY }),
+        ]);
+      } catch (e) {
+        say(explain(e)); $('status').classList.add('bad');
+        if (e.code === 'bad_key') { keyStore.set(''); showGate(explain(e)); }
+        return;
+      }
+      say('');
+      renderWants();
+      renderHeat();
+      renderPlans();
+    }
+
+    // ---------------------------------------------------------- wants
+    function statusPill(i) {
+      if (i.status === 'exists') return h('span', { class: 'pill exists' }, 'already a thing');
+      if (i.status === 'claimed' || i.plan_id) return h('span', { class: 'pill claimed' }, `claimed by ${i.host_name || 'a host'}`);
+      if (i.tipped_at) return h('span', { class: 'pill tipped' }, 'tipped · looking for a host');
+      return h('span', { class: 'pill open' }, 'not tipped yet');
+    }
+    function wantRow(i) {
+      const meta = [
+        `${whenLabel(i.when)} · ${categoryLabel(i.category)}`,
+        h('span', { class: 'up' }, `▲ ${i.yes_7d || 0} this week`),
+        `${i.top || 0} picked it as a top-3`,
+        `${i.emails || 0} want to be told`,
+        `${i.maybe || 0} maybe`,
+      ];
+      const metaEl = h('div', { class: 'meta' });
+      meta.forEach((m, k) => { if (k) metaEl.append(' · '); metaEl.append(m); });
+      let action;
+      if (i.status === 'exists') {
+        action = i.exists_url
+          ? h('a', { class: 'btn small', href: i.exists_url, target: '_blank', rel: 'noopener' }, 'Already a thing ↗')
+          : h('span', { class: 'btn small', 'aria-disabled': 'true' }, 'Already a thing');
+      } else if (i.status === 'claimed' || i.plan_id) {
+        action = null; // the pill already says who has it; a dead button would just repeat it
+      } else {
+        action = h('button', { class: `btn small${i.tipped_at ? ' primary' : ''}`, type: 'button', onclick: () => openSheet({ mode: 'claim', idea: i }) }, 'Claim');
+      }
+      const passes = i.pass || 0;
+      return h('article', { class: `want${i.yes ? '' : ' cold'}${i.status === 'claimed' ? ' claimed' : ''}`, title: `${plural(passes, 'pass', 'passes')} · ${plural(i.yes || 0, "I'd go", "I'd gos")} all-time` },
+        h('div', { class: 'num' }, String(i.yes || 0), h('small', {}, "I'd go")),
+        h('div', { class: 'body' },
+          h('div', { class: 'title' }, i.title),
+          metaEl,
+          h('div', { class: 'row' }, statusPill(i), action)));
+    }
+    function renderWants() {
+      const w = wants;
+      const stats = $('wants-stats');
+      clear(stats);
+      stats.append(h('b', {}, String(w.weigh_in || 0)), ' weighed in this week · ', h('b', {}, String(w.people || 0)), ' people · ', h('b', {}, String(w.emails || 0)), ' left an email');
+      const ordered = wantsOrder(w.ideas);
+      const warm = ordered.filter((i) => (i.yes || 0) > 0);
+      const cold = ordered.filter((i) => !(i.yes || 0));
+      const list = clear($('wants'));
+      if (!warm.length) list.append(h('p', { class: 'empty' }, 'Nobody has tapped "I\'d go" on anything yet. Send people to the deck.'));
+      for (const i of warm) list.append(wantRow(i));
+      const fold = $('cold-fold');
+      fold.hidden = !cold.length;
+      $('cold-summary').textContent = `No taps yet (${cold.length})`;
+      const coldList = clear($('cold'));
+      for (const i of cold) coldList.append(wantRow(i));
+    }
+    function renderHeat() {
+      const top = [...(wants.ideas || [])].filter((i) => (i.yes || 0) > 0).sort((a, b) => (b.yes || 0) - (a.yes || 0)).slice(0, 8);
+      const table = clear($('heat'));
+      if (!top.length) { table.append(h('caption', { class: 'empty' }, 'Shows up once people tap.')); return; }
+      table.append(h('thead', {}, h('tr', {}, h('th', { class: 'idea', scope: 'col' }, ''), WHENS.map((w) => h('th', { scope: 'col' }, whenShort(w.id))))));
+      const body = h('tbody');
+      for (const i of top) {
+        const cells = WHENS.map((w) => (i.whens && i.whens[w.id]) || 0);
+        const max = Math.max(...cells);
+        body.append(h('tr', {},
+          h('th', { class: 'idea', scope: 'row', title: i.title }, i.title, ' ', h('small', {}, `(${i.yes})`)),
+          cells.map((n, k) => h('td', { class: `h${heat(n, max)}`, title: `${n} of the ${i.yes} who'd go are free ${whenLabel(WHENS[k].id).toLowerCase()}` }, String(n)))));
+      }
+      table.append(body);
+    }
+
+    // ---------------------------------------------------------- sheet
+    const sheet = wireSheet($('sheet-plan'));
+    const form = $('plan-form');
+    clearErrorsOnInput(form);
+    const f = (name) => form.elements[name];
+    let sheetCtx = null; // { mode: 'claim'|'float'|'edit', idea?, plan? }
+    for (const c of CATEGORIES) $('f-category').append(h('option', { value: c.id }, c.label));
+    $('f-detail').addEventListener('input', () => { $('f-detail-count').textContent = String($('f-detail').value.length); });
+    const noDate = $('f-nodate');
+    function setNoDate(on) {
+      noDate.setAttribute('aria-checked', on ? 'true' : 'false');
+      // the date field stays live either way: typing a date flips the switch back off
+      if (on) $('f-starts').value = '';
+    }
+    noDate.addEventListener('click', () => setNoDate(noDate.getAttribute('aria-checked') !== 'true'));
+    $('f-starts').addEventListener('input', () => { if ($('f-starts').value) setNoDate(false); });
+
+    function openSheet(ctx) {
+      sheetCtx = ctx;
+      const { mode, idea, plan } = ctx;
+      form.reset();
+      setFieldErrors(form, {});
+      $('plan-err').textContent = '';
+      $('f-category-field').hidden = mode === 'claim' || (mode === 'edit' && plan && plan.idea_id);
+      if (mode === 'claim') {
+        $('sheet-plan-title').textContent = 'Claim it';
+        $('sheet-plan-sub').textContent = `${idea.yes || 0} said they'd go. ${idea.emails || 0} of them asked to be told when a host picks it up.`;
+        f('title').value = idea.title;
+        f('category').value = idea.category;
+        f('cap').value = PLAN_CAP; f('threshold').value = PLAN_THRESHOLD;
+        setNoDate(false);
+        $('plan-submit').textContent = 'Claim it';
+        $('plan-foot').textContent = 'People who asked get one email when you claim.';
+      } else if (mode === 'float') {
+        $('sheet-plan-title').textContent = 'Float your own idea';
+        $('sheet-plan-sub').textContent = 'Something you want to host that nobody has tapped for yet. It shows on the board like any plan.';
+        f('category').value = 'social';
+        f('cap').value = PLAN_CAP; f('threshold').value = PLAN_THRESHOLD;
+        setNoDate(false);
+        $('plan-submit').textContent = 'Put it up';
+        $('plan-foot').textContent = '';
+      } else {
+        $('sheet-plan-title').textContent = plan.starts_at ? 'Edit the plan' : 'Set a date';
+        $('sheet-plan-sub').textContent = plan.status === 'tipping' && !plan.starts_at
+          ? `${plan.in_count || 0} in so far. Once it has a date and ${plan.threshold} are in, it's on.`
+          : '';
+        f('title').value = plan.title; f('place').value = plan.place; f('detail').value = plan.detail || '';
+        f('category').value = plan.category || 'social';
+        f('cap').value = plan.cap; f('threshold').value = plan.threshold; f('meetup_url').value = plan.meetup_url || '';
+        f('starts_at').value = toLocalInput(plan.starts_at);
+        setNoDate(!plan.starts_at);
+        $('plan-submit').textContent = 'Save';
+        $('plan-foot').textContent = '';
+      }
+      $('f-detail-count').textContent = String(f('detail').value.length);
+      sheet.showModal();
+      setTimeout(() => (mode === 'edit' && !plan.starts_at ? $('f-starts') : f('title')).focus(), 50);
+    }
+    $('float').addEventListener('click', () => openSheet({ mode: 'float' }));
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const { mode, idea, plan } = sheetCtx;
+      const needsDate = noDate.getAttribute('aria-checked') === 'true';
+      const input = {
+        idea_id: mode === 'claim' ? idea.id : (mode === 'edit' ? plan.idea_id : null),
+        title: f('title').value, place: f('place').value, detail: f('detail').value,
+        category: f('category').value,
+        starts_at: needsDate ? null : (f('starts_at').value || null),
+        cap: Number.parseInt(f('cap').value, 10), threshold: Number.parseInt(f('threshold').value, 10),
+        meetup_url: f('meetup_url').value,
+      };
+      const v = validatePlan(input);
+      if (setFieldErrors(form, v.errors)) return;
+      $('plan-submit').disabled = true;
+      $('plan-err').textContent = '';
+      try {
+        if (mode === 'edit') {
+          const patch = { ...v.value }; delete patch.idea_id;
+          const out = await be.rpc('uf_host_update', { p_key: KEY, p_plan: plan.id, p_patch: patch });
+          sheet.close();
+          if (out && out.on) { notify('on', plan.id); toast("It's on — everyone who's in gets an email"); }
+          else toast('Saved.');
+        } else {
+          const out = await be.rpc('uf_host_claim', { p_key: KEY, p_plan: v.value });
+          sheet.close();
+          if (v.value.idea_id) {
+            notify('claimed', out.id);
+            const n = idea.emails || 0;
+            toast(n ? `Claimed. The ${plural(n, 'person', 'people')} who asked to be told will get one email.` : "Claimed. It's on the board now.");
+          } else toast("It's up. People can say I'm in.");
+        }
+        await load();
+      } catch (err) {
+        $('plan-err').textContent = explain(err);
+      } finally { $('plan-submit').disabled = false; }
+    });
+
+    // ---------------------------------------------------------- plans
+    const act = async (plan, action, payload, after) => {
+      try {
+        await be.rpc('uf_host_action', { p_key: KEY, p_plan: plan.id, p_action: action, p_payload: payload || {} });
+        if (action === 'on') notify('on', plan.id);
+        if (after) toast(after);
+        await load();
+      } catch (e) { toast(explain(e)); }
+    };
+    function planCard(p, nowMs) {
+      const st = planState(p, nowMs);
+      const metaParts = [p.starts_at ? formatWhen(p.starts_at) : 'Needs a date', p.place, `cap ${p.cap}`, `threshold ${p.threshold}`];
+      const meta = h('div', { class: 'meta' }, metaParts.join(' · '));
+      if (p.meetup_url) meta.append(' · ', h('a', { href: p.meetup_url, target: '_blank', rel: 'noopener' }, 'Meetup ↗'));
+      const people = h('div', { class: 'people' });
+      const ppl = p.people || [];
+      if (!ppl.length) people.append(h('span', { class: 'chip none' }, 'Nobody in yet'));
+      for (const who of ppl) people.append(h('span', { class: `chip${who.status === 'wait' ? ' wait' : ''}` }, who.status === 'wait' ? `${who.name} · waiting` : who.name));
+      const slot = h('div', { class: 'inline-slot', hidden: true });
+      const actions = h('div', { class: 'row-actions' });
+      const small = (label, cls, onclick) => h('button', { class: `btn small ${cls || ''}`.trim(), type: 'button', onclick }, label);
+      const live = p.status === 'tipping' || p.status === 'on';
+      if (p.status === 'tipping') {
+        actions.append(small(p.starts_at ? 'Edit' : 'Set date', p.starts_at ? '' : 'primary', () => openSheet({ mode: 'edit', plan: p })));
+        if (p.starts_at) actions.append(small('Make it official', 'primary', () => inlineConfirm(slot, {
+          text: `Make it official with ${p.in_count || 0} in? Everyone who's in gets an email.`, yes: "Yes, it's on", no: 'Not yet', danger: false,
+          onYes: () => act(p, 'on', {}, "It's on — everyone who's in gets an email"),
+        })));
+      } else if (p.status === 'on') {
+        actions.append(small('Edit', '', () => openSheet({ mode: 'edit', plan: p })));
+      }
+      if (live) {
+        actions.append(small('Copy Meetup description', '', async () => {
+          const ok = await copyText(meetupDescription({ ...p, host_name: p.host_name || (me && me.name) }));
+          if (ok) { toast('Copied. Paste it into the Meetup event.'); return; }
+          // no clipboard here (older phone, or not https): show it selected so a long-press copies it
+          clear(slot); slot.hidden = false;
+          const ta = h('textarea', { class: 'input', readonly: true, rows: 9, 'aria-label': 'Meetup description' }, meetupDescription({ ...p, host_name: p.host_name || (me && me.name) }));
+          slot.append(ta, h('div', { class: 'row-actions' }, h('button', { class: 'btn small', type: 'button', onclick: () => { clear(slot); slot.hidden = true; } }, 'Done')));
+          ta.focus(); ta.select();
+        }));
+        actions.append(small(p.meetup_url ? 'Change Meetup link' : 'Link Meetup event', '', () => inlinePrompt(slot, {
+          label: 'Meetup event link', type: 'url', placeholder: 'https://www.meetup.com/…', value: p.meetup_url || '', inputmode: 'url',
+          parse: (v) => (/^https:\/\/\S+$/i.test(v.trim()) ? v.trim() : undefined), bad: 'Paste the full https:// link.',
+          onSave: async (url) => { await be.rpc('uf_host_update', { p_key: KEY, p_plan: p.id, p_patch: { meetup_url: url } }); toast('Linked.'); await load(); },
+        })));
+      }
+      if (p.status === 'on' || p.status === 'done') {
+        actions.append(small(p.status === 'done' ? 'Fix how many came' : 'Happened', p.status === 'on' ? 'primary' : '', () => inlinePrompt(slot, {
+          label: 'How many came?', type: 'number', min: 0, max: 500, inputmode: 'numeric', value: p.showed != null ? String(p.showed) : '',
+          parse: (v) => { const n = Number.parseInt(v, 10); return Number.isInteger(n) && n >= 0 ? n : undefined; }, bad: 'A whole number.',
+          onSave: (n) => act(p, 'done', { showed: n }, `Marked as happened · ${n} came`),
+        })));
+      }
+      if (live) {
+        actions.append(h('span', { class: 'sp' }));
+        if (p.status === 'tipping' && !ppl.length) actions.append(small('Release', 'quiet', () => inlineConfirm(slot, {
+          text: 'Release it? The idea goes back on the board for another host.', yes: 'Release', danger: false,
+          onYes: () => act(p, 'release', {}, 'Released.'),
+        })));
+        actions.append(small('Call it off', 'danger', () => inlineConfirm(slot, {
+          text: ppl.length ? `Call it off? The ${plural(ppl.length, 'person', 'people')} who are in get told.` : 'Call it off?', yes: 'Yes, call it off',
+          onYes: () => act(p, 'cancel', {}, 'Called off.'),
+        })));
+      }
+      return h('article', { class: `card plan state-${st.state}${live ? '' : ' off'}` },
+        h('div', { class: 'p-head' }, h('h3', { class: 'p-title' }, p.title)),
+        h('div', { class: 'p-line' }, st.line),
+        meta,
+        people,
+        actions.childNodes.length ? actions : null,
+        slot);
+    }
+
+    function renderPlans() {
+      const nowMs = Date.now();
+      const root = clear($('plans'));
+      const mine = plans.mine || [];
+      const groups = [
+        ['Tipping', mine.filter((p) => p.status === 'tipping'), false],
+        ['On', mine.filter((p) => p.status === 'on'), false],
+        ['Done', mine.filter((p) => p.status === 'done'), true],
+        ['Cancelled', mine.filter((p) => p.status === 'cancelled'), true],
+      ];
+      if (!mine.length) root.append(h('p', { class: 'empty' }, 'Nothing yet. Claim an idea above, or float your own.'));
+      for (const [label, list, fold] of groups) {
+        if (!list.length) continue;
+        const cards = h('div', { class: 'list' }, list.map((p) => planCard(p, nowMs)));
+        if (fold) root.append(h('details', { class: 'fold' }, h('summary', {}, `${label} (${list.length})`), cards));
+        else root.append(h('h3', {}, `${label} (${list.length})`), cards);
+      }
+      const others = clear($('others'));
+      const ol = [...(plans.others || [])].sort((a, b) => (a.starts_at ? Date.parse(a.starts_at) : Infinity) - (b.starts_at ? Date.parse(b.starts_at) : Infinity));
+      if (!ol.length) others.append(h('li', {}, 'No other hosts have a plan up right now.'));
+      for (const p of ol) others.append(h('li', {},
+        h('span', { class: 'when' }, p.starts_at ? formatWhen(p.starts_at) : 'Needs a date'), ' · ',
+        h('b', {}, p.title), ` · ${p.host_name || 'a host'} · ${p.in_count || 0} in${p.status === 'on' ? " · it's on" : ''}`));
+    }
+
+    // ----------------------------------------------------------- boot
+    (async () => {
+      const k = keyStore.get();
+      if (HEX.test(k || '')) await enter(k);
+      else showGate('');
+    })();
+  </script>
+</body>
+</html>

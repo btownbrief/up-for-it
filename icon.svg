@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#2E7D8A"/>
+  <!-- a raised hand: "I'm up for it" in one glyph -->
+  <path d="M176 300V180a24 24 0 0 1 48 0v96M224 276V140a24 24 0 0 1 48 0v136M272 276V156a24 24 0 0 1 48 0v120M320 276V196a24 24 0 0 1 48 0v84c0 78-52 124-116 124h-8c-52 0-84-26-108-72l-40-74a24 24 0 0 1 42-24l36 52" fill="none" stroke="#FBF8F2" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

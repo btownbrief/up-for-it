@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#FBF8F2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0A111C" media="(prefers-color-scheme: dark)">
+  <title>Up For It — back room</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/desk.css">
+</head>
+<body>
+  <main class="wrap narrow">
+    <header class="top">
+      <div>
+        <h1>Back room</h1>
+        <p class="sub">Suggested ideas, the deck, hosts and their keys, every plan.</p>
+      </div>
+      <div class="right"><span class="brand">Up For It · linked from nowhere</span></div>
+    </header>
+
+    <form class="gate card" id="gate">
+      <label class="sr-only" for="secret">Moderator secret</label>
+      <input class="input" type="password" id="secret" autocomplete="current-password" placeholder="moderator secret">
+      <button class="btn primary" type="submit">Open</button>
+      <button class="btn" type="button" id="forget">Forget</button>
+    </form>
+    <p class="status" id="status" aria-live="polite"></p>
+
+    <div id="room" hidden>
+      <p class="stats" id="stats"></p>
+
+      <section class="sec" aria-labelledby="h-pending">
+        <div class="sec-head"><h2 id="h-pending">Suggested ideas</h2><span class="status" id="pending-n"></span></div>
+        <div class="list" id="pending"></div>
+      </section>
+
+      <section class="sec" aria-labelledby="h-ideas">
+        <div class="sec-head"><h2 id="h-ideas">Ideas</h2><button class="btn small" type="button" id="add-idea">Add an idea</button></div>
+        <div id="ideas"></div>
+      </section>
+
+      <section class="sec" aria-labelledby="h-hosts">
+        <div class="sec-head"><h2 id="h-hosts">Hosts</h2></div>
+        <form class="addrow" id="add-host">
+          <label class="sr-only" for="host-name">Host first name</label>
+          <input class="input small" id="host-name" placeholder="First name" maxlength="32" autocomplete="off">
+          <label class="sr-only" for="host-email">Host email</label>
+          <input class="input small" id="host-email" type="email" placeholder="email (for you, not shown)" autocomplete="off">
+          <button class="btn small primary" type="submit">Add host</button>
+        </form>
+        <div id="newkey"></div>
+        <div id="hosts"></div>
+      </section>
+
+      <section class="sec" aria-labelledby="h-plans">
+        <div class="sec-head"><h2 id="h-plans">Plans</h2></div>
+        <div id="plans"></div>
+      </section>
+
+      <footer class="foot-note">
+        <p>Approve turns a suggestion live in the deck. "Already a thing" takes it out of the deck and points people at the link. Archive hides; Delete is for good. Host keys are shown once — text the link, and Rekey if it's lost.</p>
+        <p class="fine">A Btown Brief thing.</p>
+      </footer>
+    </div>
+  </main>
+
+  <!-- add / edit an idea -->
+  <dialog class="sheet" id="sheet-idea" aria-labelledby="sheet-idea-title">
+    <div class="sheet-inner">
+      <div class="grab" aria-hidden="true"></div>
+      <div class="sheet-head">
+        <h2 id="sheet-idea-title">Edit the idea</h2>
+        <button class="close" type="button" data-close>Close</button>
+      </div>
+      <p class="sheet-sub" id="sheet-idea-sub"></p>
+      <form id="idea-form" novalidate>
+        <div class="field" data-field="title">
+          <label class="label" for="i-title">Title</label>
+          <input class="input" id="i-title" name="title" maxlength="56" autocomplete="off" placeholder="Activity + rough when + place-type">
+          <div class="hint"><span id="i-title-count">0</span>/56</div>
+          <div class="err"></div>
+        </div>
+        <div class="field" data-field="blurb">
+          <label class="label" for="i-blurb">Blurb</label>
+          <textarea class="input" id="i-blurb" name="blurb" maxlength="120" placeholder="One or two lines; real places only"></textarea>
+          <div class="hint"><span id="i-blurb-count">0</span>/120</div>
+          <div class="err"></div>
+        </div>
+        <div class="two-up">
+          <div class="field" data-field="when">
+            <label class="label" for="i-when">When</label>
+            <select class="input" id="i-when" name="when"></select>
+            <div class="err"></div>
+          </div>
+          <div class="field" data-field="category">
+            <label class="label" for="i-category">Category</label>
+            <select class="input" id="i-category" name="category"></select>
+            <div class="err"></div>
+          </div>
+        </div>
+        <div class="field" data-field="months">
+          <span class="label" id="i-months-label">Months</span>
+          <div class="opts" id="i-months" role="group" aria-labelledby="i-months-label"></div>
+          <div class="hint">None selected = year-round.</div>
+        </div>
+        <p class="form-err" id="idea-err" role="alert"></p>
+        <div class="actions">
+          <span class="sheet-foot" id="idea-foot"></span>
+          <button class="btn primary" type="submit" id="idea-submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module">
+    import { backend, explain, isDemo, DEMO_MOD_SECRET } from './js/net.js';
+    import { WHEN_HINTS, CATEGORIES, whenLabel, categoryLabel, timeAgo, formatWhen, cleanText, LIMITS } from './js/core.js';
+    import { h, $, clear, toast, say, inlineConfirm, copyText, wireSheet, setFieldErrors, clearErrorsOnInput, plural } from './js/desk.js';
+
+    const be = backend();
+    const KEY = 'uf-mod'; // sessionStorage only: survives a reload of this tab, nothing else
+    const HOST_URL = 'https://play.btownbrief.com/up-for-it/host.html#key=';
+    const secret = () => $('secret').value.trim();
+    let q = null;
+
+    async function act(fn, args, then) {
+      try {
+        const out = await be.rpc(fn, { p_secret: secret(), ...args });
+        await load();
+        if (then) toast(then);
+        return out;
+      } catch (e) { toast(explain(e)); throw e; }
+    }
+
+    async function load() {
+      const s = secret();
+      if (!s) { say('Enter the moderator secret.'); return; }
+      try { sessionStorage.setItem(KEY, s); } catch { /* fine */ }
+      say('Looking…');
+      try { q = await be.rpc('uf_mod_queue', { p_secret: s }); }
+      catch (e) { say(explain(e)); $('room').hidden = true; return; }
+      say('');
+      $('room').hidden = false;
+      const now = Date.now();
+      const st = q.stats || {};
+      const stats = clear($('stats'));
+      stats.append(h('b', {}, String(st.people || 0)), ' people · ', h('b', {}, String(st.emails || 0)), ' emails · ',
+        h('b', {}, String(st.taps || 0)), ' taps · ', h('b', {}, String(st.weigh_in || 0)), ' weighed in this week · ',
+        h('b', {}, String((q.pending || []).length)), ' waiting');
+      renderPending(now);
+      renderIdeas();
+      renderHosts(now);
+      renderPlans(now);
+    }
+
+    // ---------------------------------------------------------- pending
+    function renderPending(now) {
+      const list = clear($('pending'));
+      const pend = q.pending || [];
+      $('pending-n').textContent = pend.length ? `${pend.length} waiting` : '';
+      if (!pend.length) { list.append(h('p', { class: 'empty' }, 'Nothing waiting.')); return; }
+      for (const i of pend) {
+        const slot = h('div', { class: 'inline-slot', hidden: true });
+        list.append(h('article', { class: 'card' },
+          h('div', { class: 't' }, i.title, h('span', { class: 'pill pending' }, 'pending')),
+          i.blurb ? h('div', { class: 'b' }, i.blurb) : null,
+          h('div', { class: 'm' }, `${whenLabel(i.when)} · ${categoryLabel(i.category)} · ${timeAgo(i.created_at, now)} · ${i.origin || 'reader'}`),
+          h('div', { class: 'row-actions' },
+            h('button', { class: 'btn small primary', type: 'button', onclick: () => act('uf_mod_idea', { p_idea: i.id, p_action: 'approve' }, 'Approved — it is in the deck now.') }, 'Approve'),
+            h('button', { class: 'btn small', type: 'button', onclick: () => openIdeaSheet({ mode: 'approve', idea: i }) }, 'Edit, then approve'),
+            h('button', { class: 'btn small danger', type: 'button', onclick: () => inlineConfirm(slot, { text: 'Reject it? It disappears in 30 days.', yes: 'Reject', onYes: () => act('uf_mod_idea', { p_idea: i.id, p_action: 'reject' }, 'Rejected.') }) }, 'Reject')),
+          slot));
+      }
+    }
+
+    // ------------------------------------------------------------ ideas
+    const statusPill = (i) => {
+      const cls = { live: i.tipped_at ? 'tipped' : 'open', claimed: 'claimed', exists: 'exists', archived: 'archived' }[i.status] || '';
+      const label = i.status === 'live' ? (i.tipped_at ? 'tipped' : 'live') : i.status === 'claimed' ? `claimed · ${i.host_name || 'a host'}` : i.status;
+      return h('span', { class: `pill ${cls}` }, label);
+    };
+    function renderIdeas() {
+      const root = clear($('ideas'));
+      const ideas = q.ideas || [];
+      if (!ideas.length) { root.append(h('p', { class: 'empty' }, 'No ideas yet. Add one, or paste the seed SQL.')); return; }
+      const rank = { claimed: 0, live: 1, exists: 2, archived: 3 };
+      const sorted = [...ideas].sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9) || (b.yes || 0) - (a.yes || 0) || Date.parse(b.created_at) - Date.parse(a.created_at));
+      const live = sorted.filter((i) => i.status !== 'archived');
+      const arch = sorted.filter((i) => i.status === 'archived');
+      const block = (list) => h('div', {}, list.map(ideaRow));
+      root.append(block(live));
+      if (arch.length) root.append(h('details', { class: 'fold' }, h('summary', {}, `Archived (${arch.length})`), block(arch)));
+    }
+    function ideaRow(i) {
+      const slot = h('div', { class: 'inline-slot', hidden: true });
+      const meta = [`${whenLabel(i.when)} · ${categoryLabel(i.category)}`, i.months && i.months.length ? `months ${i.months.join(',')}` : 'year-round', i.origin || '', i.source || ''].filter(Boolean).join(' · ');
+      const actions = [
+        h('button', { class: 'btn small', type: 'button', onclick: () => openIdeaSheet({ mode: 'edit', idea: i }) }, 'Edit'),
+      ];
+      if (i.status !== 'exists') actions.push(h('button', { class: 'btn small', type: 'button', onclick: () => existsPrompt(slot, i) }, 'Already a thing…'));
+      if (i.status === 'archived') actions.push(h('button', { class: 'btn small', type: 'button', onclick: () => act('uf_mod_idea', { p_idea: i.id, p_action: 'restore' }, 'Back in the deck.') }, 'Restore'));
+      else if (i.status !== 'claimed') actions.push(h('button', { class: 'btn small', type: 'button', onclick: () => act('uf_mod_idea', { p_idea: i.id, p_action: 'archive' }, 'Archived.') }, 'Archive'));
+      actions.push(h('span', { class: 'sp' }));
+      actions.push(h('button', { class: 'btn small danger', type: 'button', onclick: () => inlineConfirm(slot, { text: 'Delete for good? Its taps go too.', yes: 'Delete', onYes: () => act('uf_mod_idea', { p_idea: i.id, p_action: 'delete' }, 'Deleted.') }) }, 'Delete'));
+      return h('div', { class: `mrow${i.status === 'archived' ? ' off' : ''}` },
+        h('div', {},
+          h('div', { class: 't' }, i.title, statusPill(i)),
+          i.blurb ? h('div', { class: 'b' }, i.blurb) : null,
+          h('div', { class: 'm' }, meta),
+          i.status === 'exists' && i.exists_url ? h('div', { class: 'm' }, h('a', { href: i.exists_url, target: '_blank', rel: 'noopener' }, i.exists_note || 'Already a thing ↗')) : null),
+        h('div', { class: 'n', title: `${i.yes || 0} I'd go · ${i.maybe || 0} maybe` }, String(i.yes || 0), h('small', {}, `${i.maybe || 0} maybe`)),
+        h('div', { class: 'row-actions' }, actions),
+        slot);
+    }
+    function existsPrompt(slot, i) {
+      clear(slot); slot.hidden = false;
+      const url = h('input', { class: 'input small', type: 'url', placeholder: 'https://… where it already happens', 'aria-label': 'Link' });
+      const note = h('input', { class: 'input small', placeholder: 'Short note, e.g. "Pinball Co-op runs this monthly"', maxlength: 80, 'aria-label': 'Note' });
+      const err = h('span', { class: 'err', role: 'alert' });
+      const go = async () => {
+        if (!/^https:\/\/\S+$/i.test(url.value.trim())) { err.textContent = 'Paste the full https:// link.'; url.focus(); return; }
+        await act('uf_mod_idea', { p_idea: i.id, p_action: 'exists', p_patch: { url: url.value.trim(), note: note.value } }, 'Marked as already a thing.');
+      };
+      slot.append(h('div', { class: 'inline-ask' },
+        h('span', { class: 'ask-text' }, 'Already a thing:'), url, note,
+        h('button', { class: 'btn small primary', type: 'button', onclick: go }, 'Save'),
+        h('button', { class: 'btn small', type: 'button', onclick: () => { clear(slot); slot.hidden = true; } }, 'Never mind'), err));
+      url.focus();
+    }
+
+    // ------------------------------------------------------- idea sheet
+    const sheet = wireSheet($('sheet-idea'));
+    const form = $('idea-form');
+    clearErrorsOnInput(form);
+    const f = (n) => form.elements[n];
+    let sheetCtx = null;
+    for (const w of WHEN_HINTS) $('i-when').append(h('option', { value: w.id }, w.label));
+    for (const c of CATEGORIES) $('i-category').append(h('option', { value: c.id }, c.label));
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthBtns = MONTHS.map((m, k) => h('button', { class: 'opt', type: 'button', 'aria-pressed': 'false', dataset: { m: String(k + 1) }, onclick: (e) => {
+      const b = e.currentTarget; b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+    } }, m));
+    $('i-months').append(...monthBtns);
+    const setMonths = (arr) => monthBtns.forEach((b) => b.setAttribute('aria-pressed', (arr || []).includes(Number(b.dataset.m)) ? 'true' : 'false'));
+    const getMonths = () => monthBtns.filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => Number(b.dataset.m));
+    const count = (inp, out) => { $(out).textContent = String($(inp).value.length); };
+    $('i-title').addEventListener('input', () => count('i-title', 'i-title-count'));
+    $('i-blurb').addEventListener('input', () => count('i-blurb', 'i-blurb-count'));
+
+    function openIdeaSheet(ctx) {
+      sheetCtx = ctx;
+      const { mode, idea } = ctx;
+      form.reset(); setFieldErrors(form, {}); $('idea-err').textContent = '';
+      if (mode === 'add') {
+        $('sheet-idea-title').textContent = 'Add an idea';
+        $('sheet-idea-sub').textContent = 'Goes straight into the deck as live.';
+        f('when').value = 'any'; f('category').value = 'social'; setMonths([]);
+        $('idea-submit').textContent = 'Add it';
+      } else {
+        $('sheet-idea-title').textContent = mode === 'approve' ? 'Edit, then approve' : 'Edit the idea';
+        $('sheet-idea-sub').textContent = mode === 'approve' ? 'Tidy it into a hostable unit (activity + rough when + place-type), then it goes live.' : '';
+        f('title').value = idea.title || ''; f('blurb').value = idea.blurb || '';
+        f('when').value = idea.when || 'any'; f('category').value = idea.category || 'social'; setMonths(idea.months || []);
+        $('idea-submit').textContent = mode === 'approve' ? 'Save and approve' : 'Save';
+      }
+      count('i-title', 'i-title-count'); count('i-blurb', 'i-blurb-count');
+      sheet.showModal();
+      setTimeout(() => f('title').focus(), 50);
+    }
+    $('add-idea').addEventListener('click', () => openIdeaSheet({ mode: 'add' }));
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const { mode, idea } = sheetCtx;
+      const patch = { title: cleanText(f('title').value, LIMITS.title), blurb: cleanText(f('blurb').value, LIMITS.blurb), when: f('when').value, category: f('category').value, months: getMonths() };
+      const errors = {};
+      if (patch.title.length < 4) errors.title = 'A title people will recognize (4+ letters).';
+      if (setFieldErrors(form, errors)) return;
+      $('idea-submit').disabled = true;
+      try {
+        if (mode === 'add') await be.rpc('uf_mod_idea', { p_secret: secret(), p_idea: null, p_action: 'add', p_patch: patch });
+        else {
+          await be.rpc('uf_mod_idea', { p_secret: secret(), p_idea: idea.id, p_action: 'edit', p_patch: patch });
+          if (mode === 'approve') await be.rpc('uf_mod_idea', { p_secret: secret(), p_idea: idea.id, p_action: 'approve' });
+        }
+        sheet.close();
+        toast(mode === 'add' ? 'Added to the deck.' : mode === 'approve' ? 'Saved and approved — it is in the deck now.' : 'Saved.');
+        await load();
+      } catch (err) { $('idea-err').textContent = explain(err); }
+      finally { $('idea-submit').disabled = false; }
+    });
+
+    // ------------------------------------------------------------ hosts
+    function keyBox(name, key) {
+      const link = HOST_URL + key;
+      const box = h('div', { class: 'keybox', role: 'region', 'aria-label': `Host key for ${name}` },
+        h('div', {}, h('b', {}, `${name}'s key`)),
+        h('div', { class: 'k' }, key),
+        h('div', { class: 'link' }, link),
+        h('div', { class: 'row-actions' },
+          h('button', { class: 'btn small primary', type: 'button', onclick: async () => toast((await copyText(link)) ? 'Link copied. Text it to them.' : "Couldn't copy — select the link and copy it by hand.") }, 'Copy link'),
+          h('button', { class: 'btn small', type: 'button', onclick: async () => toast((await copyText(key)) ? 'Key copied.' : "Couldn't copy — select the key and copy it by hand.") }, 'Copy key only'),
+          h('span', { class: 'sp' }),
+          h('button', { class: 'btn small quiet', type: 'button', onclick: () => box.remove() }, 'Done, I sent it')),
+        h('div', { class: 'warn' }, "This is the only time you'll see it. Text it to them; if it's lost, Rekey."));
+      return box;
+    }
+    $('add-host').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = cleanText($('host-name').value, LIMITS.hostName);
+      if (!name) { toast('A host needs a first name.'); $('host-name').focus(); return; }
+      try {
+        const out = await act('uf_mod_host', { p_action: 'add', p_payload: { name, email: $('host-email').value } }, `${name} added.`);
+        $('host-name').value = ''; $('host-email').value = '';
+        const nk = clear($('newkey'));
+        nk.append(keyBox(name, out.key));
+      } catch { /* toasted by act */ }
+    });
+    function renderHosts(now) {
+      const root = clear($('hosts'));
+      const hosts = q.hosts || [];
+      if (!hosts.length) { root.append(h('p', { class: 'empty' }, 'No hosts yet. Add the first one above.')); return; }
+      for (const hst of hosts) {
+        const slot = h('div', { class: 'inline-slot', hidden: true });
+        root.append(h('div', { class: `mrow${hst.active ? '' : ' off'}` },
+          h('div', {},
+            h('div', { class: 't' }, hst.name, h('span', { class: `pill ${hst.active ? 'on' : 'off'}` }, hst.active ? 'active' : 'disabled')),
+            h('div', { class: 'm' }, [hst.email || 'no email', `${plural(hst.plans || 0, 'plan')}`, `since ${timeAgo(hst.created_at, now)}`].join(' · '))),
+          null,
+          h('div', { class: 'row-actions' },
+            h('button', { class: 'btn small', type: 'button', onclick: () => inlineConfirm(slot, { text: `Rekey ${hst.name}? The old link stops working.`, yes: 'Rekey', danger: false, onYes: async () => {
+              const out = await act('uf_mod_host', { p_action: 'rekey', p_payload: { id: hst.id } }, `${hst.name} rekeyed.`);
+              const nk = clear($('newkey')); nk.append(keyBox(hst.name, out.key)); nk.scrollIntoView({ block: 'nearest' });
+            } }) }, 'Rekey'),
+            hst.active
+              ? h('button', { class: 'btn small', type: 'button', onclick: () => act('uf_mod_host', { p_action: 'disable', p_payload: { id: hst.id } }, `${hst.name} disabled.`) }, 'Disable')
+              : h('button', { class: 'btn small', type: 'button', onclick: () => act('uf_mod_host', { p_action: 'enable', p_payload: { id: hst.id } }, `${hst.name} enabled.`) }, 'Enable'),
+            h('span', { class: 'sp' }),
+            h('button', { class: 'btn small danger', type: 'button', onclick: () => inlineConfirm(slot, { text: `Delete ${hst.name} and their ${plural(hst.plans || 0, 'plan')} for good?`, yes: 'Delete', onYes: () => act('uf_mod_host', { p_action: 'delete', p_payload: { id: hst.id } }, 'Deleted.') }) }, 'Delete')),
+          slot));
+      }
+    }
+
+    // ------------------------------------------------------------ plans
+    const planPill = (p) => h('span', { class: `pill ${{ tipping: p.starts_at ? 'tipped' : 'needs', on: 'on', done: 'done', cancelled: 'off' }[p.status] || ''}` }, p.status === 'tipping' && !p.starts_at ? 'needs a date' : p.status);
+    function renderPlans(now) {
+      const root = clear($('plans'));
+      const plans = q.plans || [];
+      if (!plans.length) { root.append(h('p', { class: 'empty' }, 'No plans yet.')); return; }
+      const list = h('ul', { class: 'one-liners' });
+      for (const p of plans) {
+        const slot = h('div', { class: 'inline-slot', hidden: true, style: 'flex-basis:100%' });
+        const live = p.status === 'tipping' || p.status === 'on';
+        list.append(h('li', {},
+          h('span', { class: 'when' }, p.starts_at ? formatWhen(p.starts_at) : 'Needs a date'), ' · ',
+          h('b', {}, p.title), ` · ${p.host_name || 'no host'} · ${p.in_count || 0} in${p.wait_count ? ` · ${p.wait_count} waiting` : ''}${p.showed != null ? ` · ${p.showed} came` : ''} `,
+          planPill(p),
+          h('div', { class: 'row-actions' },
+            live ? h('button', { class: 'btn small', type: 'button', onclick: () => inlineConfirm(slot, { text: `Call off "${p.title}"? The host and everyone in should hear from you.`, yes: 'Cancel it', onYes: () => act('uf_mod_plan', { p_plan: p.id, p_action: 'cancel' }, 'Cancelled.') }) }, 'Cancel') : null,
+            h('button', { class: 'btn small danger', type: 'button', onclick: () => inlineConfirm(slot, { text: 'Delete this plan and its sign-ups for good?', yes: 'Delete', onYes: () => act('uf_mod_plan', { p_plan: p.id, p_action: 'delete' }, 'Deleted.') }) }, 'Delete')),
+          slot));
+      }
+      root.append(list);
+    }
+
+    // ------------------------------------------------------------- gate
+    $('gate').addEventListener('submit', (e) => { e.preventDefault(); load(); });
+    $('forget').addEventListener('click', () => { try { sessionStorage.removeItem(KEY); } catch { /* fine */ } $('secret').value = ''; $('room').hidden = true; say('Forgotten.'); });
+    try {
+      const s = sessionStorage.getItem(KEY);
+      if (s) { $('secret').value = s; load(); }
+      else if (isDemo()) { $('secret').value = DEMO_MOD_SECRET; say('Demo: the secret is prefilled. Press Open.'); }
+    } catch { /* fine */ }
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Every 6 hours: refresh data/meetup.json from the Btown Brief IRL Meetup
+# calendar (scripts/meetup-ical.mjs) and commit it only if it changed. The
+# host desk can offer these as "Link a Meetup event" choices. The script
+# fails soft, so a Meetup hiccup leaves the old file in place.
+name: meetup
+
+on:
+  schedule:
+    - cron: '25 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch the Meetup calendar
+        run: node scripts/meetup-ical.mjs --print
+      - name: Commit data/meetup.json if it changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/meetup.json
+          git diff --quiet --cached || (git commit -m "meetup: refresh calendar" && git push)

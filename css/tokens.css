@@ -1,0 +1,70 @@
+/* Up For It — the City Guide's materials: warm paper, navy ink, lake teal,
+   Instrument Serif over DM Sans. Every color is a token; dark mode only
+   swaps tokens. Shared by index.html (style.css), host.html and mod.html
+   (desk.css). Same values as Who's Playing so the family reads as one. */
+:root {
+  --bg: #FBF8F2;
+  --group: #F1ECE3;
+  --card: #FFFFFF;
+  --line: #E4DED3;
+  --ink: #13243B;
+  --ink-2: #4A5B70;
+  --ink-3: #6B788B;
+  --accent: #2E7D8A;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E3F0F2;
+  --warm: #F2683C;
+  --warm-soft: #FDE9E1;
+  --pill: #13243B;
+  --pill-ink: #FBF8F2;
+  --ok: #2E8A5F;
+  --warn: #B8791A;
+  --bad: #C9503F;
+  --shadow: 0 10px 30px rgba(19, 36, 59, .14);
+  --card-shadow: 0 1px 2px rgba(19, 36, 59, .05);
+  --sheet: #FFFFFF;
+  --radius: 18px;
+  --serif: "Instrument Serif", "Lora", Georgia, "Times New Roman", serif;
+  --sans: "DM Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0A111C;
+    --group: #18233A;
+    --card: #121B2B;
+    --line: #243148;
+    --ink: #F2F0EA;
+    --ink-2: #A9B3C3;
+    --ink-3: #6F7C91;
+    --accent: #62B6C3;
+    --accent-ink: #06202A;
+    --accent-soft: #14303A;
+    --warm: #F28A66;
+    --warm-soft: #3A2419;
+    --pill: #F2F0EA;
+    --pill-ink: #13243B;
+    --ok: #5FCB8F;
+    --warn: #E0A952;
+    --bad: #F07B6C;
+    --shadow: 0 10px 30px rgba(0, 0, 0, .55);
+    --card-shadow: none;
+    --sheet: #121B2B;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--sans); font-size: 17px; line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

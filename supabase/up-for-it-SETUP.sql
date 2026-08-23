@@ -650,7 +650,7 @@ end $$;
 -- 2. In the SQL editor: select extensions.crypt('YOUR-SECRET', extensions.gen_salt('bf', 12));
 -- 3. Paste the $2a$12$... result between the quotes below; run this file.
 create or replace function public.uf_mod_hash() returns text
-language sql immutable as $$ select 'PASTE-BCRYPT-HASH-HERE'::text; $$;
+language sql immutable as $$ select '$2a$12$oeYkpK7TUg4iYSLgfAOoFO8iJv2TNZITMUAd9r15TzPZdXI33jPA2'::text; $$;
 revoke all on function public.uf_mod_hash() from public, anon, authenticated;
 
 create or replace function public.uf_mod_ok(p_secret text) returns boolean
