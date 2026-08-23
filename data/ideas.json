@@ -1,0 +1,380 @@
+{
+  "_comment": "Seed deck for Up For It. Hostable units only: activity + rough when + place-type. Keep titles <=56, blurbs <=120, every named place real. months [] = year-round. exists = already a thing -> link, taught as a redirect. Edit here, then `node scripts/build-seed-sql.mjs` and re-paste the SQL.",
+  "ideas": [
+    {
+      "slug": "sunset-hike-mt-philo",
+      "title": "Golden-hour hike up Mt. Philo, a September weeknight",
+      "blurb": "Short climb to the lake-and-Adirondacks view; the park gate closes at dusk so we're down by then. Carpool, $5 day-use.",
+      "when": "weeknight",
+      "category": "outdoors",
+      "months": [
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "hobby:hiking"
+    },
+    {
+      "slug": "foliage-walk-ethan-allen-tower",
+      "title": "Foliage walk to the Ethan Allen Park tower",
+      "blurb": "Easy forested loop in the New North End up to the 1905 stone tower and the city-and-lake view. Free, an hour, all paces.",
+      "when": "sunday",
+      "category": "outdoors",
+      "months": [
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "hobby:hiking"
+    },
+    {
+      "slug": "causeway-ride-to-the-cut",
+      "title": "Ride the Causeway to the cut before the ferry stops",
+      "blurb": "Flat 3.5-mile ride out into the lake on the Island Line. Rent at Local Motion on the waterfront; $4 ferry hop optional.",
+      "when": "sat-am",
+      "category": "outdoors",
+      "months": [
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "hobby:causeway-biking"
+    },
+    {
+      "slug": "sunset-paddle-north-beach",
+      "title": "Sunset paddle from North Beach, a calm weeknight",
+      "blurb": "Kayaks and boards rent right on the sand at North Beach; hug the shore, watch the sun drop. Calm-water only.",
+      "when": "weeknight",
+      "category": "outdoors",
+      "months": [
+        8,
+        9
+      ],
+      "exists": null,
+      "origin": "hobby:paddling"
+    },
+    {
+      "slug": "intervale-fog-walk-then-coffee",
+      "title": "Fog-morning walk at the Intervale, then coffee",
+      "blurb": "Free trails through the farm fields while the autumn fog sits in the basin. Early alarm, easy pace, coffee after nearby.",
+      "when": "sat-am",
+      "category": "outdoors",
+      "months": [
+        9,
+        10,
+        11
+      ],
+      "exists": null,
+      "origin": "editor"
+    },
+    {
+      "slug": "delta-park-fall-birding",
+      "title": "Fall migration birding on the Delta Park boardwalk",
+      "blurb": "Flat boardwalk to where the Winooski meets the lake — herons and waterfowl. Any binoculars work; free, an hour.",
+      "when": "sat-am",
+      "category": "outdoors",
+      "months": [
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "hobby:birding"
+    },
+    {
+      "slug": "lakeview-cemetery-sunset-walk",
+      "title": "Sunset walk along the Lakeview Cemetery bluffs",
+      "blurb": "Quiet Victorian garden paths on the bluffs above the lake — one of the best under-visited sunsets in town. Free, flat.",
+      "when": "weeknight",
+      "category": "outdoors",
+      "months": [
+        8,
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "hobby:sunset-chasing"
+    },
+    {
+      "slug": "apple-picking-shelburne-orchards",
+      "title": "Apple picking at Shelburne Orchards, a Saturday morning",
+      "blurb": "Pick-your-own with the Adirondacks behind the rows, fresh cider at the ciderhouse. Pay by the bag; carpool from town.",
+      "when": "sat-am",
+      "category": "food-drink",
+      "months": [
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "editor"
+    },
+    {
+      "slug": "route-100-cider-donut-run",
+      "title": "Cider donut run up Route 100, a foliage Sunday",
+      "blurb": "Carpool to Cold Hollow for donuts warm from the fryer, Ben & Jerry's next door, leaves the whole way. Cheap, half a day.",
+      "when": "sunday",
+      "category": "food-drink",
+      "months": [
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "editor"
+    },
+    {
+      "slug": "old-north-end-cheap-eats-crawl",
+      "title": "Old North End cheap-eats crawl, a weeknight",
+      "blurb": "Walk between Pho Hong, Taco Gordo and Ms. Weinerz, one small thing at each. Walkable, under $15 a stop, no reservations.",
+      "when": "weeknight",
+      "category": "food-drink",
+      "months": [],
+      "exists": null,
+      "origin": "meetup"
+    },
+    {
+      "slug": "oakledge-golden-hour-picnic",
+      "title": "Golden-hour picnic at Oakledge, bring one thing",
+      "blurb": "Blankets on the grass by the Earth Clock, everyone brings one dish or snack to share. Free, sunset included.",
+      "when": "sat-pm",
+      "category": "social",
+      "months": [
+        8,
+        9
+      ],
+      "exists": null,
+      "origin": "editor"
+    },
+    {
+      "slug": "forties-plus-lakeside-coffee-walk",
+      "title": "40s and up: lakeside coffee walk from Perkins Pier",
+      "blurb": "Coffee from Burlington Bay Café, then a stroll up the Greenway at talking pace. No agenda, for the 40-plus crowd.",
+      "when": "sunday",
+      "category": "social",
+      "months": [],
+      "exists": null,
+      "origin": "club:Burlington Social Activities Group (BTown Brief IRL)"
+    },
+    {
+      "slug": "twenties-thirties-pine-street-patio-hang",
+      "title": "20s and 30s: after-work hang on a Pine Street patio",
+      "blurb": "Meet at a Pine Street brewery or cidery patio after work, grab a table, meet people your age. Walkable, no cover.",
+      "when": "weeknight",
+      "category": "social",
+      "months": [
+        8,
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "club:Burlington Social Activities Group (BTown Brief IRL)"
+    },
+    {
+      "slug": "new-in-town-walking-tour",
+      "title": "New in town? Locals-led walk, waterfront to Church St",
+      "blurb": "An hour on foot from Waterfront Park up to Church Street, locals pointing out the good stuff. Free; newcomers first.",
+      "when": "sat-pm",
+      "category": "community",
+      "months": [],
+      "exists": null,
+      "origin": "editor"
+    },
+    {
+      "slug": "pinball-co-op-wednesday",
+      "title": "Pinball night at the Pinball Co-op, a Wednesday",
+      "blurb": "Forty machines on free play for one flat fee, alcohol-free, regulars explain the old games. Carpool to So. Burlington.",
+      "when": "weeknight",
+      "category": "games",
+      "months": [],
+      "exists": null,
+      "origin": "hobby:pinball"
+    },
+    {
+      "slug": "sunset-drive-in-double-feature",
+      "title": "Double feature at the Sunset Drive-In, a Saturday",
+      "blurb": "Carpool to Colchester, tune the radio, split the ~$12-a-car admission. Blankets and lawn chairs; one of Vermont's last.",
+      "when": "sat-pm",
+      "category": "film",
+      "months": [
+        8,
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "editor"
+    },
+    {
+      "slug": "art-hop-pine-street-walk",
+      "title": "Art Hop walk down Pine Street, opening night",
+      "blurb": "Studios and galleries open along the South End during Art Hop weekend. Free, walkable, meet at the top of Pine.",
+      "when": "any",
+      "category": "arts",
+      "months": [
+        9
+      ],
+      "exists": null,
+      "origin": "editor"
+    },
+    {
+      "slug": "film-photo-walk-old-north-end",
+      "title": "Film photo walk through the Old North End",
+      "blurb": "One roll each, any camera (LeZot has cheap ones and develops). Wander the ONE together, compare prints next week.",
+      "when": "sat-pm",
+      "category": "arts",
+      "months": [
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "hobby:film-photography"
+    },
+    {
+      "slug": "silent-book-club-sunday",
+      "title": "Silent book club: read an hour, then talk, a Sunday",
+      "blurb": "Bring whatever you're reading to a downtown café, read quietly together, chat after. No assigned book, no prep.",
+      "when": "sunday",
+      "category": "words",
+      "months": [],
+      "exists": null,
+      "origin": "hobby:reading"
+    },
+    {
+      "slug": "radio-bean-open-mic-cheer-squad",
+      "title": "Cheer squad at the Radio Bean open mic, a weeknight",
+      "blurb": "Go as a table to the long-running open mic; sign up if you dare, applaud if you don't. Small cover at most.",
+      "when": "weeknight",
+      "category": "music",
+      "months": [],
+      "exists": null,
+      "origin": "hobby:live-music"
+    },
+    {
+      "slug": "live-music-maquam-winery",
+      "title": "Live music night at Maquam Winery, after work",
+      "blurb": "The group has done this before and it worked: a live set, a glass or a soda, a table for ten. Carpool north.",
+      "when": "weeknight",
+      "category": "music",
+      "months": [
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "meetup"
+    },
+    {
+      "slug": "disc-golf-schifilliti-after-work",
+      "title": "After-work disc golf round at Schifilliti Park",
+      "blurb": "Free course in the New North End; a starter set costs about what lunch does, or share discs. Beginners welcome.",
+      "when": "weeknight",
+      "category": "sports",
+      "months": [
+        8,
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "hobby:disc-golf"
+    },
+    {
+      "slug": "beginner-pickleball-leddy-courts",
+      "title": "Beginner pickleball on the Leddy Park courts",
+      "blurb": "Four free lit courts, first come first served; rotate in, learn the rules in ten minutes. Bring or borrow a paddle.",
+      "when": "weeknight",
+      "category": "sports",
+      "months": [
+        8,
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "sport:pickleball"
+    },
+    {
+      "slug": "sangha-yoga-then-brunch",
+      "title": "Beginner yoga at Sangha Studio, then brunch",
+      "blurb": "Drop into a donation-based beginner class on Pine Street or in the ONE, then walk to brunch. Pay what you can.",
+      "when": "sat-am",
+      "category": "wellness",
+      "months": [],
+      "exists": null,
+      "origin": "hobby:yoga"
+    },
+    {
+      "slug": "savu-sauna-circuit",
+      "title": "Sauna circuit at Savu, a chilly weeknight",
+      "blurb": "Heat, plunge, Adirondack chair, repeat, on the waterfront. Everyone books their own slot; meet in the chairs.",
+      "when": "weeknight",
+      "category": "wellness",
+      "months": [
+        10,
+        11,
+        12
+      ],
+      "exists": null,
+      "origin": "hobby:sauna"
+    },
+    {
+      "slug": "generator-makerspace-tour",
+      "title": "Tour Generator makerspace on a Saturday",
+      "blurb": "See the woodshop, laser cutters and 3D printers on Sears Lane at a Saturday enrollment session. Free to look.",
+      "when": "sat-am",
+      "category": "learning",
+      "months": [],
+      "exists": null,
+      "origin": "club:Generator Makerspace"
+    },
+    {
+      "slug": "fotw-trail-work-day",
+      "title": "Trail work morning with Fellowship of the Wheel",
+      "blurb": "Join a volunteer trail day on local singletrack — tools provided, no bike required. Free, outdoors, you built that.",
+      "when": "sat-am",
+      "category": "community",
+      "months": [
+        9,
+        10
+      ],
+      "exists": null,
+      "origin": "club:Fellowship of the Wheel"
+    },
+    {
+      "slug": "vermont-ultimate-thursday-pickup",
+      "title": "Thursday pickup ultimate with Vermont Ultimate",
+      "blurb": "Free, all-levels summer pickup; the field is announced weekly. Cleats optional, running shoes fine.",
+      "when": "weeknight",
+      "category": "sports",
+      "months": [
+        8,
+        9
+      ],
+      "exists": {
+        "url": "https://vermontultimate.org/pickup",
+        "note": "Already a thing: Vermont Ultimate pickup, Thursdays all summer"
+      },
+      "origin": "club:Vermont Ultimate (Green Mountain Disc Alliance)"
+    },
+    {
+      "slug": "queen-city-contras-beginner-night",
+      "title": "Try a contra dance at Shelburne Town Hall",
+      "blurb": "Every dance is taught, no partner needed — come 15 minutes early for the beginner walkthrough. Live band, small fee.",
+      "when": "weeknight",
+      "category": "social",
+      "months": [],
+      "exists": {
+        "url": "https://queencitycontras.com/schedule/",
+        "note": "Already a thing: Queen City Contras, monthly Fridays 6:45pm"
+      },
+      "origin": "club:Queen City Contras"
+    },
+    {
+      "slug": "friendly-tabletop-game-night",
+      "title": "Learn-to-play board game night at The Boardroom",
+      "blurb": "Burlington's big board game Meetup runs learn-to-play and open gaming several nights a week at the Main St game café.",
+      "when": "weeknight",
+      "category": "games",
+      "months": [],
+      "exists": {
+        "url": "https://www.meetup.com/friendlytabletopgamers/",
+        "note": "Already a thing: The Friendly Tabletop Gamers at The Boardroom"
+      },
+      "origin": "club:The Friendly Tabletop Gamers"
+    }
+  ]
+}
