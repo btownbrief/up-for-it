@@ -7,19 +7,21 @@
 //                              "I'd go" pile (people who left an email),
 //                              minus anyone already in on the plan
 //   kind 'on'      {plan_id}  a plan is official → tell everyone who's in
-//                              (waitlisted folks get their own line). Called
-//                              again later (someone joins an on plan) it
-//                              sends the same email only to people who
-//                              haven't had it yet (uf_commits.notified).
+//                              (waitlisted folks get their own line). Poked
+//                              again after a late "I'm in", only addresses
+//                              that haven't had it hear.
 //   kind 'cancelled' {plan_id} an on plan was called off → tell everyone
 //   kind 'remind'  (no id)    daily cron: "Tomorrow: …" to everyone in on a
 //                              plan dated tomorrow (Eastern calendar day)
 //
-// Idempotent via four booleans on uf_plans (notified_claim, notified_on, notified_cancel,
-// reminded) plus uf_commits.notified per person: the first caller flips the
-// flag atomically; everyone else gets {sent:false, why:'already'}. If Resend
-// fails outright the flag is flipped back so a later call retries. Emails
-// are never logged.
+// Idempotent per RECIPIENT via the uf_sent ledger (plan, kind, address):
+// deliver() claims rows with ON CONFLICT DO NOTHING and sends only what it
+// claimed, so client retries, concurrent calls and step-out/re-join can't
+// repeat an email; a failed send releases its row so a later call retries
+// just that address. The plan flags (notified_claim/_on/_cancel, reminded)
+// mean "fully delivered once" and short-circuit repeat pokes. MAX_PER_PLAN_KIND
+// bounds how many addresses one plan can ever be made to email. Addresses
+// are never logged or returned.
 //
 // Runs with the service role (default for edge functions) — the ONLY thing
 // in the fleet that reads uf_people.email / uf_commits.email.
@@ -101,10 +103,11 @@ const uniqEmails = (list: (string | null | undefined)[]) => {
   return [...seen];
 };
 
-// Send a list of one-recipient emails. Batch in chunks; if a batch call
-// fails, fall back to single sends for that chunk. Returns how many went.
-async function send(key: string, mails: Mail[]): Promise<number> {
-  let sent = 0;
+// Send one-recipient emails. Batch in chunks; if a batch call fails, fall
+// back to single sends for that chunk. Reports per-recipient outcome so the
+// caller can release exactly the ones that didn't go.
+async function send(key: string, mails: Mail[]): Promise<{ ok: string[]; failed: string[] }> {
+  const okList: string[] = [], failed: string[] = [];
   for (let i = 0; i < mails.length; i += BATCH) {
     const chunk = mails.slice(i, i + BATCH);
     let batched = false;
@@ -114,7 +117,7 @@ async function send(key: string, mails: Mail[]): Promise<number> {
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(chunk),
       });
-      if (res.ok) { sent += chunk.length; batched = true; }
+      if (res.ok) { for (const m of chunk) okList.push(m.to[0]); batched = true; }
     } catch { /* fall through to singles */ }
     if (batched) continue;
     for (const m of chunk) {
@@ -124,11 +127,49 @@ async function send(key: string, mails: Mail[]): Promise<number> {
           headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(m),
         });
-        if (res.ok) sent += 1;
-      } catch { /* counted as not sent */ }
+        (res.ok ? okList : failed).push(m.to[0]);
+      } catch { failed.push(m.to[0]); }
     }
   }
-  return sent;
+  return { ok: okList, failed };
+}
+
+// Any real plan is far below this (cap ≤ 60 + a waitlist; a yes-pile of a
+// few dozen). It bounds how many addresses a loop of fake sign-ups can make
+// one plan email, per message kind.
+const MAX_PER_PLAN_KIND = 200;
+
+// deno-lint-ignore no-explicit-any
+type Db = any;
+const q = async <T>(p: PromiseLike<{ data: T; error: unknown }>): Promise<T> => {
+  const r = await p;
+  if (r.error) throw r.error;
+  return r.data;
+};
+
+// Per-recipient idempotence. Claims (plan, kind, email) rows in uf_sent
+// with ON CONFLICT DO NOTHING — only the rows THIS call inserted are ours
+// to send, so concurrent calls, client retries and step-out/re-join can't
+// earn anyone the same email twice. Failed sends release their rows so a
+// later call retries exactly those. Returns counts; never addresses.
+async function deliver(db: Db, key: string, planId: string, kind: string, mails: Mail[]) {
+  const byEmail = new Map<string, Mail>();
+  for (const m of mails) byEmail.set(m.to[0], m);
+  const want = [...byEmail.keys()];
+  if (!want.length) return { count: 0, failed: 0, capped: false };
+  const { count: have } = await db.from('uf_sent').select('*', { count: 'exact', head: true }).eq('plan_id', planId).eq('kind', kind);
+  const room = Math.max(0, MAX_PER_PLAN_KIND - (have || 0));
+  const capped = want.length > room;
+  const ask = want.slice(0, room);
+  if (!ask.length) return { count: 0, failed: 0, capped };
+  const claimed = await q<{ email: string }[] | null>(
+    db.from('uf_sent').upsert(ask.map((email) => ({ plan_id: planId, kind, email })), { onConflict: 'plan_id,kind,email', ignoreDuplicates: true }).select('email'),
+  );
+  const mine = (claimed || []).map((r) => r.email);
+  if (!mine.length) return { count: 0, failed: 0, capped };
+  const out = await send(key, mine.map((e) => byEmail.get(e)!));
+  if (out.failed.length) await db.from('uf_sent').delete().eq('plan_id', planId).eq('kind', kind).in('email', out.failed);
+  return { count: out.ok.length, failed: out.failed.length, capped };
 }
 
 Deno.serve(async (req) => {
@@ -146,36 +187,46 @@ Deno.serve(async (req) => {
       const { data } = await db.from('uf_hosts').select('name').eq('id', id).maybeSingle();
       return data?.name || 'A Btown Brief IRL host';
     };
-    const inCount = async (id: string) => {
-      const { count } = await db.from('uf_commits').select('*', { count: 'exact', head: true }).eq('plan_id', id).eq('status', 'in');
-      return count || 0;
+    type Commit = { email: string; status: string };
+    const commitsOf = (id: string) => q<Commit[] | null>(db.from('uf_commits').select('email, status').eq('plan_id', id)).then((r) => r || []);
+    // one Mail per distinct address; `text` may depend on the row (waitlist copy)
+    const mailsFor = (rows: Commit[], subject: string, text: (c: Commit) => string) => {
+      const seen = new Set<string>();
+      const mails: Mail[] = [];
+      for (const c of rows) {
+        const e = String(c.email || '').trim().toLowerCase();
+        if (!e.includes('@') || seen.has(e)) continue;
+        seen.add(e);
+        mails.push({ from, to: [e], subject, text: text(c) });
+      }
+      return mails;
     };
+    // the plan-level flag means "fully delivered once"; it short-circuits
+    // repeat pokes and is only set when nothing failed
+    const finish = (id: string, flag: string, r: { failed: number }) =>
+      r.failed ? Promise.resolve() : db.from('uf_plans').update({ [flag]: true }).eq('id', id);
 
     // ------------------------------------------------------------ claimed
     if (kind === 'claimed') {
-      const { data: plan } = await db.from('uf_plans').select(PLAN_COLS).eq('id', plan_id).in('status', ['tipping', 'on']).maybeSingle() as { data: Plan | null };
+      const plan = await q<Plan | null>(db.from('uf_plans').select(PLAN_COLS).eq('id', plan_id).in('status', ['tipping', 'on']).maybeSingle());
       if (!plan) return ok({ sent: false, why: 'not_found' });
       if (!plan.idea_id) return ok({ sent: false, why: 'no_idea' });
-      const { data: claimed } = await db.from('uf_plans').update({ notified_claim: true })
-        .eq('id', plan.id).eq('notified_claim', false).select('id').maybeSingle();
-      if (!claimed) return ok({ sent: false, why: 'already' });
-      const unclaim = () => db.from('uf_plans').update({ notified_claim: false }).eq('id', plan.id);
+      if (plan.notified_claim) return ok({ sent: false, why: 'already' });
 
-      const [{ data: idea }, host, { data: yesTaps }, { data: commits }] = await Promise.all([
+      const [{ data: idea }, host, { data: yesTaps }, commits] = await Promise.all([
         db.from('uf_ideas').select('title').eq('id', plan.idea_id).maybeSingle(),
         hostName(plan.host_id),
         db.from('uf_taps').select('token_hash').eq('idea_id', plan.idea_id).eq('answer', 'yes'),
-        db.from('uf_commits').select('email').eq('plan_id', plan.id),
+        commitsOf(plan.id),
       ]);
       const hashes = (yesTaps || []).map((t: { token_hash: string }) => t.token_hash);
       let emails: string[] = [];
       if (hashes.length) {
-        const { data: people } = await db.from('uf_people').select('email').in('token_hash', hashes).neq('email', '');
-        emails = uniqEmails((people || []).map((p: { email: string }) => p.email));
+        const people = await q<{ email: string }[] | null>(db.from('uf_people').select('email').in('token_hash', hashes).neq('email', ''));
+        emails = uniqEmails((people || []).map((p) => p.email));
       }
-      const already = new Set(uniqEmails((commits || []).map((c: { email: string }) => c.email)));
+      const already = new Set(uniqEmails(commits.map((c) => c.email)));
       const to = emails.filter((e) => !already.has(e));
-      if (!to.length) return ok({ sent: true, count: 0 });
 
       const ideaTitle = idea?.title || plan.title;
       const text = [
@@ -192,25 +243,17 @@ Deno.serve(async (req) => {
         '— Btown Brief',
       ].filter((l) => l !== null).join('\n');
       const subject = `${host} is hosting: ${plan.title}`;
-      const count = await send(key, to.map((e) => ({ from, to: [e], subject, text })));
-      if (!count) { await unclaim(); return ok({ sent: false, why: 'resend' }); }
-      return ok({ sent: true, count, failed: to.length - count });
+      const r = await deliver(db, key, plan.id, 'claimed', to.map((e) => ({ from, to: [e], subject, text })));
+      await finish(plan.id, 'notified_claim', r);
+      return ok({ sent: true, ...r });
     }
 
     // ---------------------------------------------------------- cancelled
-    // Only people who said "I'm in" hear about a cancellation, and only if
-    // the plan had actually been announced (on) or had people in it.
     if (kind === 'cancelled') {
-      const { data: plan } = await db.from('uf_plans').select(PLAN_COLS).eq('id', plan_id).eq('status', 'cancelled').maybeSingle() as { data: Plan | null };
+      const plan = await q<Plan | null>(db.from('uf_plans').select(PLAN_COLS).eq('id', plan_id).eq('status', 'cancelled').maybeSingle());
       if (!plan) return ok({ sent: false, why: 'not_found' });
-      const { data: claimed } = await db.from('uf_plans').update({ notified_cancel: true })
-        .eq('id', plan.id).eq('notified_cancel', false).select('id').maybeSingle();
-      if (!claimed) return ok({ sent: false, why: 'already' });
-      const unclaim = () => db.from('uf_plans').update({ notified_cancel: false }).eq('id', plan.id);
-      const [host, { data: commits }] = await Promise.all([
-        hostName(plan.host_id),
-        db.from('uf_commits').select('email').eq('plan_id', plan.id),
-      ]);
+      if (plan.notified_cancel) return ok({ sent: false, why: 'already' });
+      const [host, commits] = await Promise.all([hostName(plan.host_id), commitsOf(plan.id)]);
       const when = plan.starts_at ? formatWhen(plan.starts_at) : 'date TBD';
       const text = [
         `Hi — this one is called off:`,
@@ -224,41 +267,22 @@ Deno.serve(async (req) => {
         '',
         '— Btown Brief',
       ].join('\n');
-      const subject = `Called off: ${plan.title}`;
-      const seen = new Set<string>();
-      const mails: Mail[] = [];
-      for (const c of (commits || []) as { email: string }[]) {
-        const e = String(c.email || '').trim().toLowerCase();
-        if (!e.includes('@') || seen.has(e)) continue;
-        seen.add(e);
-        mails.push({ from, to: [e], subject, text });
-      }
-      if (!mails.length) return ok({ sent: true, count: 0 });
-      const count = await send(key, mails);
-      if (!count) { await unclaim(); return ok({ sent: false, why: 'resend' }); }
-      return ok({ sent: true, count, failed: mails.length - count });
+      const r = await deliver(db, key, plan.id, 'cancelled', mailsFor(commits, `Called off: ${plan.title}`, () => text));
+      await finish(plan.id, 'notified_cancel', r);
+      return ok({ sent: true, ...r });
     }
 
     // ----------------------------------------------------------------- on
-    // First call after a plan goes on: flip notified_on, email everyone who's
-    // in (or waitlisted), mark those commits notified. Later calls (someone
-    // joined after it was on): email only commits still un-notified. Either
-    // way nobody gets this email twice.
+    // "It's on" to everyone who's in (waitlisted folks get their own line).
+    // Poked again after a late "I'm in", the ledger means only the new
+    // address hears — never a repeat to anyone. Clearing the date wipes the
+    // ledger (SQL), so re-dating announces again.
     if (kind === 'on') {
-      const { data: plan } = await db.from('uf_plans').select(PLAN_COLS).eq('id', plan_id).eq('status', 'on').maybeSingle() as { data: Plan | null };
+      const plan = await q<Plan | null>(db.from('uf_plans').select(PLAN_COLS).eq('id', plan_id).eq('status', 'on').maybeSingle());
       if (!plan) return ok({ sent: false, why: 'not_found' });
       if (!plan.starts_at) return ok({ sent: false, why: 'needs_date' });
-      const { data: claimed } = await db.from('uf_plans').update({ notified_on: true })
-        .eq('id', plan.id).eq('notified_on', false).select('id').maybeSingle();
-      const announce = Boolean(claimed);
-
-      type Row = { token_hash: string; email: string; status: string; notified: boolean };
-      const [host, { data: commits }] = await Promise.all([
-        hostName(plan.host_id),
-        db.from('uf_commits').select('token_hash, email, status, notified').eq('plan_id', plan.id),
-      ]);
-      const rows = (commits || []) as Row[];
-      const inN = rows.filter((c) => c.status === 'in').length;
+      const [host, commits] = await Promise.all([hostName(plan.host_id), commitsOf(plan.id)]);
+      const inN = commits.filter((c) => c.status === 'in').length;
       const when = formatWhen(plan.starts_at);
       const body = (wait: boolean) => [
         wait ? `Hi — you're on the waitlist for this one. If a spot opens you move up automatically; check Mine in the app (we don't email for that). Here's the plan:`
@@ -277,67 +301,24 @@ Deno.serve(async (req) => {
         '',
         '— Btown Brief',
       ].filter((l) => l !== null).join('\n');
-      const subject = `It's on: ${plan.title} · ${when}`;
-      const mailsFor = (list: Row[]) => {
-        const seen = new Set<string>();
-        const mails: Mail[] = [];
-        for (const c of list) {
-          const e = String(c.email || '').trim().toLowerCase();
-          if (!e.includes('@') || seen.has(e)) continue;
-          seen.add(e);
-          mails.push({ from, to: [e], subject, text: body(c.status === 'wait') });
-        }
-        return mails;
-      };
-      const markNotified = (list: Row[], v: boolean) => list.length
-        ? db.from('uf_commits').update({ notified: v }).eq('plan_id', plan.id).in('token_hash', list.map((r) => r.token_hash))
-        : Promise.resolve();
-
-      if (announce) {
-        const mails = mailsFor(rows);
-        if (!mails.length) { await markNotified(rows, true); return ok({ sent: true, count: 0 }); }
-        const count = await send(key, mails);
-        if (!count) { await db.from('uf_plans').update({ notified_on: false }).eq('id', plan.id); return ok({ sent: false, why: 'resend' }); }
-        await markNotified(rows, true);
-        return ok({ sent: true, count, failed: mails.length - count });
-      }
-
-      // already announced → welcome anyone who joined since
-      const late = rows.filter((c) => !c.notified);
-      if (!late.length) return ok({ sent: false, why: 'already' });
-      const { data: took } = await db.from('uf_commits').update({ notified: true })
-        .eq('plan_id', plan.id).eq('notified', false).in('token_hash', late.map((r) => r.token_hash))
-        .select('token_hash') as { data: { token_hash: string }[] | null };
-      const mine = new Set((took || []).map((r) => r.token_hash));
-      const toSend = late.filter((r) => mine.has(r.token_hash));
-      if (!toSend.length) return ok({ sent: false, why: 'already' });
-      const mails = mailsFor(toSend);
-      if (!mails.length) return ok({ sent: true, count: 0 });
-      const count = await send(key, mails);
-      if (!count) { await markNotified(toSend, false); return ok({ sent: false, why: 'resend' }); }
-      return ok({ sent: true, count, failed: mails.length - count, late: true });
+      const r = await deliver(db, key, plan.id, 'on', mailsFor(commits, `It's on: ${plan.title} · ${when}`, (c) => body(c.status === 'wait')));
+      if (!plan.notified_on) await finish(plan.id, 'notified_on', r);
+      if (!r.count && !r.failed) return ok({ sent: false, why: 'already' });
+      return ok({ sent: true, ...r, late: plan.notified_on });
     }
 
     // ------------------------------------------------------------- remind
     // Tomorrow's plans: anything on whose start falls on tomorrow's Eastern
     // calendar date, so "Tomorrow:" is literally true (an 11pm start tonight
-    // is not tomorrow). Run once a day (remind.yml, 9:10am ET); each plan is
-    // reminded once (reminded flag; edits to the date reset it).
+    // is not tomorrow). Run once a day (remind.yml, 9:10am ET); `reminded`
+    // flips when everyone got it, the ledger keeps retries from repeating.
     const { lo, hi } = tomorrowBounds(Date.now());
-    const { data: due } = await db.from('uf_plans').select(PLAN_COLS)
-      .eq('status', 'on').eq('reminded', false).gte('starts_at', lo).lt('starts_at', hi) as { data: Plan[] | null };
+    const due = await q<Plan[] | null>(db.from('uf_plans').select(PLAN_COLS)
+      .eq('status', 'on').eq('reminded', false).gte('starts_at', lo).lt('starts_at', hi));
     let plans = 0, emails = 0;
     for (const plan of due || []) {
-      const { data: claimed } = await db.from('uf_plans').update({ reminded: true })
-        .eq('id', plan.id).eq('reminded', false).select('id').maybeSingle();
-      if (!claimed) continue;
-      const [host, n, { data: commits }] = await Promise.all([
-        hostName(plan.host_id),
-        inCount(plan.id),
-        db.from('uf_commits').select('email').eq('plan_id', plan.id).eq('status', 'in'),
-      ]);
-      const to = uniqEmails((commits || []).map((c: { email: string }) => c.email));
-      if (!to.length) { plans += 1; continue; }
+      const [host, commits] = await Promise.all([hostName(plan.host_id), commitsOf(plan.id)]);
+      const inRows = commits.filter((c) => c.status === 'in');
       const when = formatWhen(plan.starts_at);
       const text = [
         `Hi — a reminder that this is tomorrow:`,
@@ -346,17 +327,16 @@ Deno.serve(async (req) => {
         `  ${when} · ${plan.place}`,
         plan.detail ? `  ${plan.detail}` : null,
         '',
-        `Hosted by ${host}. ${n} in, cap ${plan.cap}.`,
+        `Hosted by ${host}. ${inRows.length} in, cap ${plan.cap}.`,
         plan.meetup_url ? `Meetup page: ${plan.meetup_url}` : null,
         '',
         `If you can't make it, step out under Mine so someone else can: ${planLink(plan.id)}`,
         '',
         '— Btown Brief',
       ].filter((l) => l !== null).join('\n');
-      const subject = `Tomorrow: ${plan.title} · ${when}`;
-      const count = await send(key, to.map((e) => ({ from, to: [e], subject, text })));
-      if (!count) { await db.from('uf_plans').update({ reminded: false }).eq('id', plan.id); continue; }
-      plans += 1; emails += count;
+      const r = await deliver(db, key, plan.id, 'remind', mailsFor(inRows, `Tomorrow: ${plan.title} · ${when}`, () => text));
+      await finish(plan.id, 'reminded', r);
+      plans += 1; emails += r.count;
     }
     return ok({ sent: true, plans, emails });
   } catch (_e) {

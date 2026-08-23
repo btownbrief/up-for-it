@@ -45,13 +45,17 @@ changes in plain language. Plain static site, no build step, ES modules.
   function → no email, nothing else changes (the client fires and forgets).
   `?demo=1` runs the whole thing against `FakeBackend` with seeded ideas,
   plans, hosts (`DEMO_HOST_KEY`) and mod secret `'demo'`, and saves nothing.
-- **Email goes out from one place and is idempotent.** `uf-notify` flips
-  `notified_claim` / `notified_on` / `notified_cancel` / `reminded` on the plan
-  atomically before sending and flips them back if Resend fails; "it's on"
-  also flips `uf_commits.notified` per person, so a late "I'm in" on an
-  already-on plan gets the email (client pokes kind `on` again) without
-  anyone getting it twice. If you add a message, add a flag — never re-send
-  on a client retry. Never log addresses.
+- **Email goes out from one place and is idempotent per recipient.**
+  `uf-notify` claims `(plan, kind, address)` rows in `uf_sent` (service role
+  only) with ON CONFLICT DO NOTHING and sends only what it claimed, so client
+  retries, concurrent calls and step-out/re-join never repeat an email; a
+  failed send releases its row so a later call retries just that address.
+  The plan flags (`notified_claim` / `notified_on` / `notified_cancel` /
+  `reminded`) mean "fully delivered once" and short-circuit repeat pokes.
+  `MAX_PER_PLAN_KIND` bounds how many addresses one plan can ever be made to
+  email. Clearing a plan's date wipes its `on` rows (re-dating re-announces);
+  moving the date wipes `remind`. Every cancel path (host desk AND back room)
+  must poke `notify('cancelled')`. Never log addresses.
 - **Times are Eastern, on purpose.** A bare `YYYY-MM-DDTHH:MM` from the
   desk's date input means Burlington wall-clock time whatever zone the host's
   phone is in (`core.parseWhen` / `wallToMs` / `msToWall`); plans store ISO
@@ -76,7 +80,11 @@ changes in plain language. Plain static site, no build step, ES modules.
   mint tokens and tap junk. One tap per idea per token, 3 suggestions/day,
   10 open "I'm in" per token, server-side validation, URL stripping and the
   back room stop casual mischief. Don't present anything here as
-  integrity-protected.
+  integrity-protected. Known, accepted: anyone can burn the moderator's 20
+  guesses and rest the back room for 15 minutes (it's one person's tool);
+  the `uf_sent` ledger caps email abuse at one message per address per
+  plan per kind, and `MAX_PER_PLAN_KIND` per plan — plus-addressing variants
+  count as distinct addresses.
 
 ## Before you finish
 

@@ -121,7 +121,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script type="module">
-    import { backend, explain, isDemo, DEMO_MOD_SECRET } from './js/net.js';
+    import { backend, explain, isDemo, notify, DEMO_MOD_SECRET } from './js/net.js';
     import { WHEN_HINTS, CATEGORIES, whenLabel, categoryLabel, timeAgo, formatWhen, cleanText, LIMITS } from './js/core.js';
     import { h, $, clear, toast, say, inlineConfirm, copyText, wireSheet, setFieldErrors, clearErrorsOnInput, plural } from './js/desk.js';
 
@@ -363,7 +363,7 @@
           h('b', {}, p.title), ` · ${p.host_name || 'no host'} · ${p.in_count || 0} in${p.wait_count ? ` · ${p.wait_count} waiting` : ''}${p.showed != null ? ` · ${p.showed} came` : ''} `,
           planPill(p),
           h('div', { class: 'row-actions' },
-            live ? h('button', { class: 'btn small', type: 'button', onclick: () => inlineConfirm(slot, { text: `Call off "${p.title}"? The host and everyone in should hear from you.`, yes: 'Cancel it', onYes: () => act('uf_mod_plan', { p_plan: p.id, p_action: 'cancel' }, 'Cancelled.') }) }, 'Cancel') : null,
+            live ? h('button', { class: 'btn small', type: 'button', onclick: () => inlineConfirm(slot, { text: `Call off "${p.title}"? The host and everyone in should hear from you.`, yes: 'Cancel it', onYes: () => act('uf_mod_plan', { p_plan: p.id, p_action: 'cancel' }, 'Cancelled — everyone who was in gets an email.').then(() => notify('cancelled', p.id)) }) }, 'Cancel') : null,
             h('button', { class: 'btn small danger', type: 'button', onclick: () => inlineConfirm(slot, { text: 'Delete this plan and its sign-ups for good?', yes: 'Delete', onYes: () => act('uf_mod_plan', { p_plan: p.id, p_action: 'delete' }, 'Deleted.') }) }, 'Delete')),
           slot));
       }

@@ -8,7 +8,7 @@
 
 import {
   IDEA_THRESHOLD, CLAIM_DAYS, validToken, isUuid, cleanText, cleanEmail, looksLikeEmail,
-  validateTap, validateFinish, validateSuggestion, validateCommit, validatePlan, WHENS, validCategory,
+  validateTap, validateFinish, validateSuggestion, validateCommit, validatePlan, WHENS, validCategory, wallToMs, msToWall,
 } from './core.js';
 
 const RATE = { tapsPerDay: 300, suggestionsPerDay: 3, openCommits: 10, gateFails: 20 };
@@ -32,7 +32,7 @@ export class FakeBackend {
     this.people = new Map(); // token → {email, name, whens, created_at}
     this.hosts = [];     // {id, name, email, key, active, created_at}
     this.plans = [];     // {id, idea_id, host_id, title, place, detail, category, starts_at, cap, threshold, status, meetup_url, showed, created_at, tipped_at, on_at, notified_claim, notified_on, reminded}
-    this.commits = [];   // {plan_id, token, name, email, status, notified, created_at}
+    this.commits = [];   // {plan_id, token, name, email, status, created_at}
     this.modFails = []; this.hostFails = [];
   }
   iso(ms = this.now()) { return new Date(ms).toISOString(); }
@@ -174,7 +174,7 @@ export class FakeBackend {
     const inN = this.commits.filter((c) => c.plan_id === p_plan && c.status === 'in').length;
     let status;
     if (mine) { status = mine.status; mine.name = v.value.name; mine.email = v.value.email; }
-    else { status = inN >= p.cap ? 'wait' : 'in'; this.commits.push({ plan_id: p_plan, token: p_token, name: v.value.name, email: v.value.email, status, notified: false, created_at: this.iso() }); }
+    else { status = inN >= p.cap ? 'wait' : 'in'; this.commits.push({ plan_id: p_plan, token: p_token, name: v.value.name, email: v.value.email, status, created_at: this.iso() }); }
     const pe = this.person(p_token); pe.email = v.value.email; pe.name = v.value.name;
     const n = this.commits.filter((c) => c.plan_id === p_plan && c.status === 'in').length;
     let wentOn = false;
@@ -281,7 +281,7 @@ export class FakeBackend {
     if (f.cap < this.commits.filter((c) => c.plan_id === p.id && c.status === 'in').length) throw new BackendError('cap_too_small');
     if (f.starts_at !== p.starts_at) p.reminded = false;
     if (!f.starts_at && p.status === 'on') { p.status = 'tipping'; p.on_at = null; p.notified_on = false; }
-    Object.assign(p, { title: f.title, place: f.place, detail: f.detail, category: validCategory(merged.category) ? merged.category : p.category, starts_at: f.starts_at, cap: f.cap, threshold: f.threshold, meetup_url: f.meetup_url });
+    Object.assign(p, { title: f.title, place: f.place, detail: f.detail, category: f.category, starts_at: f.starts_at, cap: f.cap, threshold: f.threshold, meetup_url: f.meetup_url });
     this.promote(p.id);
     const n = this.commits.filter((c) => c.plan_id === p.id && c.status === 'in').length;
     let wentOn = false;
@@ -402,12 +402,13 @@ export const DEMO_HOST_KEY = 'deadbeefdeadbeefdeadbeefdeadbeef';
 export const DEMO_HOST_KEY_2 = 'cafebabecafebabecafebabecafebabe';
 export function seedDemo(be, ideas) {
   const now = be.now();
-  // daysAgo may be fractional (for "created_at" spacing); h pins a local
-  // clock hour (6.5 = 6:30) so demo plans read like real evenings
+  // daysAgo may be fractional (for "created_at" spacing); h pins an Eastern
+  // clock hour (6.5 = 6:30) so demo plans read like real Burlington evenings
+  // on any device
   const at = (daysAgo, h = 12) => {
-    const d = new Date(now - daysAgo * DAY);
-    d.setHours(Math.floor(h), Math.round((h % 1) * 60), 0, 0);
-    return d.toISOString();
+    const day = msToWall(now - daysAgo * DAY).slice(0, 10);
+    const hh = String(Math.floor(h)).padStart(2, '0'), mm = String(Math.round((h % 1) * 60)).padStart(2, '0');
+    return new Date(wallToMs(`${day}T${hh}:${mm}`)).toISOString();
   };
   for (const i of ideas) {
     be.ideas.push({ id: uid(), slug: i.slug, title: i.title, blurb: i.blurb || '', when: i.when, category: i.category, months: i.months || [],

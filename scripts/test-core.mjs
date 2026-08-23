@@ -101,8 +101,13 @@ test('wall-clock times are Eastern no matter the device zone', () => {
   // EDT (UTC-4) in September, EST (UTC-5) in December
   assert.equal(new Date(wallToMs('2026-09-04T18:30')).toISOString(), '2026-09-04T22:30:00.000Z');
   assert.equal(new Date(wallToMs('2026-12-04T18:30')).toISOString(), '2026-12-04T23:30:00.000Z');
-  // the hour the clocks fall back (Nov 1 2026): 1:30am resolves, doesn't NaN
-  assert.ok(Number.isFinite(wallToMs('2026-11-01T01:30')));
+  // fall back (Nov 1 2026): 1:30am happens twice; we mean the first (EDT, 05:30Z)
+  assert.equal(new Date(wallToMs('2026-11-01T01:30')).toISOString(), '2026-11-01T05:30:00.000Z');
+  assert.equal(msToWall('2026-11-01T05:30:00Z'), '2026-11-01T01:30');
+  // spring forward (Mar 8 2026): 2:30am never happens → NaN, not silently 1:30
+  assert.ok(Number.isNaN(wallToMs('2026-03-08T02:30')));
+  assert.equal(new Date(wallToMs('2026-03-08T03:00')).toISOString(), '2026-03-08T07:00:00.000Z');
+  assert.ok(Number.isNaN(wallToMs('2026-02-31T10:00')));
   assert.ok(Number.isNaN(wallToMs('nope')));
   assert.equal(msToWall('2026-09-04T22:30:00.000Z'), '2026-09-04T18:30');
   assert.equal(msToWall('2026-12-04T23:30:00.000Z'), '2026-12-04T18:30');

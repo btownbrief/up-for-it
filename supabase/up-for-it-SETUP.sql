@@ -109,6 +109,7 @@ create table if not exists public.uf_plans (
   notified_claim boolean not null default false,
   notified_on boolean not null default false,
   reminded boolean not null default false,
+  cancelled_at timestamptz,
   notified_cancel boolean not null default false
 );
 create index if not exists uf_plans_status on public.uf_plans (status, starts_at);
@@ -125,9 +126,21 @@ create table if not exists public.uf_commits (
   primary key (plan_id, token_hash)
 );
 create index if not exists uf_commits_token on public.uf_commits (token_hash);
--- notified: this person has had the "it's on" email (set by uf-notify; lets a
--- late "I'm in" on an already-on plan get the email without re-sending to all)
-alter table public.uf_commits add column if not exists notified boolean not null default false;
+alter table public.uf_commits drop column if exists notified;  -- replaced by uf_sent (2026-08-23)
+alter table public.uf_plans add column if not exists cancelled_at timestamptz;
+
+-- uf_sent: one row per (plan, message, address) the edge function has sent or
+-- is sending — its per-recipient idempotence. Keyed by address, not device,
+-- so stepping out and back in (or a fresh device with the same address) can
+-- never earn the same email twice. 'on' rows are cleared when a plan loses
+-- its date (re-dating is a new "it's on"); 'remind' rows when the date moves.
+create table if not exists public.uf_sent (
+  plan_id uuid not null references public.uf_plans(id) on delete cascade,
+  kind text not null check (kind in ('claimed','on','remind','cancelled')),
+  email text not null,  -- PRIVATE: edge function only
+  at timestamptz not null default now(),
+  primary key (plan_id, kind, email)
+);
 
 create table if not exists public.uf_mod_fails (at timestamptz not null default now());
 create table if not exists public.uf_host_fails (at timestamptz not null default now(), prefix text not null default '');
@@ -139,10 +152,11 @@ alter table public.uf_people enable row level security;
 alter table public.uf_hosts enable row level security;
 alter table public.uf_plans enable row level security;
 alter table public.uf_commits enable row level security;
+alter table public.uf_sent enable row level security;
 alter table public.uf_mod_fails enable row level security;
 alter table public.uf_host_fails enable row level security;
 revoke all on table public.uf_ideas, public.uf_taps, public.uf_people, public.uf_hosts,
-  public.uf_plans, public.uf_commits, public.uf_mod_fails, public.uf_host_fails from anon, authenticated;
+  public.uf_plans, public.uf_commits, public.uf_sent, public.uf_mod_fails, public.uf_host_fails from anon, authenticated;
 
 -- --------------------------------------------------------------- helpers
 
@@ -209,7 +223,7 @@ begin
   update uf_ideas i set status = 'live'
    where i.status = 'claimed'
      and not exists (select 1 from uf_plans q where q.idea_id = i.id and q.status in ('tipping','on'));
-  delete from uf_plans where status = 'cancelled' and created_at < now() - interval '30 days';
+  delete from uf_plans where status = 'cancelled' and coalesce(cancelled_at, created_at) < now() - interval '30 days';
   delete from uf_ideas where status = 'rejected' and created_at < now() - interval '30 days';
 end $$;
 
@@ -328,6 +342,7 @@ begin
   select * into i from uf_ideas where id = p_idea;
   if not found or i.status not in ('live','claimed','exists') then raise exception using message = 'not_found'; end if;
   perform pg_advisory_xact_lock(hashtext('uft|' || h));
+  perform pg_advisory_xact_lock(hashtext('ufi|' || p_idea::text));  -- five concurrent yeses must see each other to tip
   if not exists (select 1 from uf_taps where idea_id = p_idea and token_hash = h)
      and (select count(*) from uf_taps where token_hash = h and created_at > now() - interval '24 hours') >= 300 then
     raise exception using message = 'slow_down';
@@ -408,6 +423,7 @@ begin
   v_email := uf_clean_email(p_commit->>'email');
   if length(v_name) < 1 or not uf_valid_email(v_email) then raise exception using message = 'bad_commit'; end if;
   perform uf_sweep();
+  perform pg_advisory_xact_lock(hashtext('uft|' || h));               -- the 10-open-plans count is per token
   perform pg_advisory_xact_lock(hashtext('ufp|' || p_plan::text));
   select * into p from uf_plans where id = p_plan;
   if not found or p.status not in ('tipping','on') then raise exception using message = 'not_found'; end if;
@@ -544,7 +560,10 @@ begin
   detail := uf_clean(p->>'detail', 200);
   category := case when uf_valid_category(p->>'category') then p->>'category' else 'social' end;
   begin
-    starts_at := case when coalesce(p->>'starts_at', '') = '' then null else (p->>'starts_at')::timestamptz end;
+    -- a value with no zone on it is Eastern wall-clock, like core.parseWhen
+    starts_at := case when coalesce(p->>'starts_at', '') = '' then null
+                      when (p->>'starts_at') ~ '([Zz]|[+-]\d\d(:?\d\d)?)$' then (p->>'starts_at')::timestamptz
+                      else ((p->>'starts_at')::timestamp at time zone 'America/New_York') end;
     cap := coalesce((p->>'cap')::int, 8);
     threshold := coalesce((p->>'threshold')::int, 5);
     idea_id := case when coalesce(p->>'idea_id', '') = '' then null else (p->>'idea_id')::uuid end;
@@ -613,6 +632,8 @@ begin
          on_at = case when f.starts_at is null and p.status = 'on' then null else on_at end,
          notified_on = case when f.starts_at is null and p.status = 'on' then false else notified_on end
    where id = p_plan;
+  if f.starts_at is distinct from p.starts_at then delete from uf_sent where plan_id = p_plan and kind = 'remind'; end if;
+  if f.starts_at is null and p.status = 'on' then delete from uf_sent where plan_id = p_plan and kind = 'on'; end if;
   -- cap grew: promote from the waitlist in order
   update uf_commits c set status = 'in'
     from (select token_hash from uf_commits where plan_id = p_plan and status = 'wait' order by created_at
@@ -644,7 +665,7 @@ begin
     update uf_plans set status = 'on', on_at = now(), tipped_at = coalesce(tipped_at, now()) where id = p_plan;
   elsif p_action = 'cancel' then
     if p.status not in ('tipping','on') then raise exception using message = 'not_found'; end if;
-    update uf_plans set status = 'cancelled' where id = p_plan;
+    update uf_plans set status = 'cancelled', cancelled_at = now() where id = p_plan;
     if p.idea_id is not null then update uf_ideas set status = 'live' where id = p.idea_id and status = 'claimed'; end if;
   elsif p_action = 'release' then
     if p.status <> 'tipping' or exists (select 1 from uf_commits where plan_id = p_plan) then
@@ -785,7 +806,7 @@ begin
   select * into p from uf_plans where id = p_plan;
   if not found then raise exception using message = 'not_found'; end if;
   if p_action = 'cancel' then
-    update uf_plans set status = 'cancelled' where id = p_plan;
+    update uf_plans set status = 'cancelled', cancelled_at = now() where id = p_plan;
     if p.idea_id is not null then update uf_ideas set status = 'live' where id = p.idea_id and status = 'claimed'; end if;
   elsif p_action = 'delete' then
     delete from uf_plans where id = p_plan;

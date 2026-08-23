@@ -75,8 +75,7 @@ ok "$(S "select uf_idea_public(i)->>'host_name' from uf_ideas i where id='$IDEA'
 ok "$(AE "select uf_commit('$PLAN','$T1','{\"name\":\"Pri\"}');")" "bad_commit" "email required"
 ok "$(A "select uf_commit('$PLAN','$T1','{\"name\":\"Pri\",\"email\":\"p@x.io\"}')->>'status';")" "in" "first in"
 A "select uf_commit('$PLAN','$T2','{\"name\":\"Sam\",\"email\":\"s@x.io\"}');" >/dev/null
-ok "$(S "select count(*) from uf_commits where plan_id='$PLAN' and notified = false;")" "2" "commits start un-notified (uf-notify flips per person)"
-ok "$(S "select count(*) from information_schema.columns where table_name='uf_commits' and column_name='notified' and column_default='false';")" "1" "notified defaults false"
+ok "$(AE "select count(*) from uf_sent;")" "permission" "anon cannot read the sent ledger"
 ok "$(A "select uf_commit('$PLAN','$T3','{\"name\":\"Lee\",\"email\":\"l@x.io\"}')->>'on';")" "false" "threshold met but undated → not on"
 ok "$(S "select status||'|'||(tipped_at is not null) from uf_plans where id='$PLAN';")" "tipping|true" "plan tipped, still tipping"
 # host sets a date → goes on
@@ -125,10 +124,23 @@ A "select uf_commit('$P3','$T1','{\"name\":\"A\",\"email\":\"a1@x.io\"}');" >/de
 ok "$(S "select status from uf_plans where id='$P3';")" "on" "threshold + date → on"
 A "select uf_commit('$P3','$T3','{\"name\":\"C\",\"email\":\"c1@x.io\"}');" >/dev/null
 ok "$(AE "select uf_host_update('$KEY2','$P3','{\"cap\":2}');")" "cap_too_small" "cap below in_count refused"
+# pretend uf-notify sent "it's on" + a reminder; clearing the date wipes both ledgers so re-dating re-announces
+P -c "insert into uf_sent (plan_id, kind, email) values ('$P3','on','a1@x.io'), ('$P3','remind','a1@x.io'), ('$P3','claimed','z@x.io');" >/dev/null
 A "select uf_host_update('$KEY2','$P3','{\"starts_at\":null}');" >/dev/null
 ok "$(S "select status||'|'||coalesce(on_at::text,'null')||'|'||notified_on from uf_plans where id='$P3';")" "tipping|null|false" "clearing the date demotes on → tipping"
+ok "$(S "select string_agg(kind, ',' order by kind) from uf_sent where plan_id='$P3';")" "claimed" "date cleared → 'on' and 'remind' ledger rows gone, 'claimed' stays"
+# a bare wall-clock time is Eastern (EST in January = UTC-5), like core.parseWhen
+A "select uf_host_update('$KEY2','$P3','{\"starts_at\":\"2030-01-05T18:30\"}');" >/dev/null
+ok "$(S "select starts_at at time zone 'UTC' from uf_plans where id='$P3';")" "2030-01-05 23:30:00" "bare starts_at is read as Eastern"
 A "select uf_host_update('$KEY2','$P3','{\"starts_at\":\"2030-01-02T23:00:00Z\"}');" >/dev/null
 ok "$(S "select status from uf_plans where id='$P3';")" "on" "re-dating re-announces"
+# cancel stamps cancelled_at; the 30-day prune counts from then, not creation
+P4=$(A "select uf_host_claim('$KEY2', '{\"title\":\"Old plan\",\"place\":\"Here\"}')->>'id';")
+P -c "update uf_plans set created_at = now() - interval '40 days' where id='$P4';" >/dev/null
+A "select uf_host_action('$KEY2','$P4','cancel');" >/dev/null
+ok "$(S "select (cancelled_at is not null)::text from uf_plans where id='$P4';")" "true" "cancel stamps cancelled_at"
+A "select uf_plans_public();" >/dev/null
+ok "$(S "select count(*) from uf_plans where id='$P4';")" "1" "a just-cancelled old plan survives the sweep (uf-notify still needs it)"
 # stuck claimed: simulate a plan that finished via the sweep (on, started long ago)
 P -c "update uf_plans set starts_at = now() - interval '3 days' where id='$P3';" >/dev/null
 A "select uf_plans_public();" >/dev/null

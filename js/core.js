@@ -105,17 +105,23 @@ function zoneParts(ms, tz = TZ) {
   for (const p of f.formatToParts(new Date(ms))) o[p.type] = p.value;
   return { y: +o.year, mo: +o.month, d: +o.day, h: +o.hour % 24, mi: +o.minute };
 }
-// Wall clock in tz → epoch ms. Two passes handle the DST offset change.
+// Wall clock in tz → epoch ms. NaN for a time that doesn't exist (Feb 31,
+// or the hour the clocks spring forward). On the fall-back night, when a
+// wall time happens twice, this is the FIRST one (still daylight time).
 export function wallToMs(s, tz = TZ) {
   const m = WALL_RE.exec(String(s ?? '').trim());
   if (!m) return NaN;
   const [y, mo, d, h, mi] = m.slice(1, 6).map(Number);
   const want = Date.UTC(y, mo - 1, d, h, mi);
+  if (new Date(want).getUTCMonth() !== mo - 1 || new Date(want).getUTCDate() !== d) return NaN; // Feb 31 and friends
+  const same = (ms) => { const p = zoneParts(ms, tz); return Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi) === want; };
   let guess = want;
   for (let i = 0; i < 2; i++) {
     const p = zoneParts(guess, tz);
     guess += want - Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi);
   }
+  if (!same(guess)) return NaN;                 // spring-forward gap: no such moment
+  if (same(guess - 3600000)) return guess - 3600000; // fall-back overlap: take the earlier one
   return guess;
 }
 // Epoch/ISO → 'YYYY-MM-DDTHH:MM' wall clock in tz (what the desk's input shows).
@@ -190,7 +196,7 @@ export function validatePlan(input) {
   if (place.length < 2) errors.place = 'Where?';
   const detail = cleanText(input?.detail, LIMITS.detail);
   const startsMs = parseWhen(input?.starts_at);
-  if (Number.isNaN(startsMs)) errors.starts_at = "That date doesn't parse.";
+  if (Number.isNaN(startsMs)) errors.starts_at = "That date doesn't exist — check it (and the hour the clocks change).";
   const cap = Number.isInteger(input?.cap) ? input.cap : PLAN_CAP;
   if (!(cap >= 2 && cap <= 60)) errors.cap = 'Between 2 and 60.';
   const threshold = Number.isInteger(input?.threshold) ? input.threshold : PLAN_THRESHOLD;
