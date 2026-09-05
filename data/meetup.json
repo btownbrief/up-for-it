@@ -1,13 +1,6 @@
 {
-  "fetched": "2026-09-05T15:20:18.332Z",
+  "fetched": "2026-09-05T20:28:20.809Z",
   "events": [
-    {
-      "uid": "event_316166956@meetup.com",
-      "title": "Btown at the Champlain Valley Fair",
-      "starts_at": "2026-09-05T17:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/316166956/",
-      "location": ""
-    },
     {
       "uid": "event_316204133@meetup.com",
       "title": "Pick-up Basketball",
@@ -62,6 +55,13 @@
       "title": "BTown Coffee Club",
       "starts_at": "2026-09-26T14:00:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/csrdwtyjcmbjc/",
+      "location": ""
+    },
+    {
+      "uid": "event_vtrmztyjcmbnc@meetup.com",
+      "title": "Pick-up Basketball",
+      "starts_at": "2026-09-30T21:30:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/vtrmztyjcmbnc/",
       "location": ""
     }
   ]
