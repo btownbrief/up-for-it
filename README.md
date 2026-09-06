@@ -31,6 +31,26 @@ back room: `mod.html?demo=1`, secret `demo`).
 Plain static site, no build step, no accounts. Same Supabase project and
 security model as the rest of the Btown fleet.
 
+## Come along (`go/`)
+
+The sibling for going to someone *else's* event. A host picks an event
+already on the City Guide calendar (`guide.btownbrief.com/data/events/events.json`),
+adds a meeting point, a meet time (default 15 minutes before) and one line
+("coming alone is normal, look for the Btown sign"), and gets one link:
+`play.btownbrief.com/up-for-it/go/?c=ABC234`. A reader taps it, sees the
+event, the meeting plan and who's coming, and taps **I'm coming** with a
+first name only. No email, no threshold: it's on the moment it's made, and
+it ends itself when the event ends ("This happened" + the next standing
+Btown gathering). `?demo=1` seeds two come-alongs from real upcoming events.
+
+- `go/index.html` + `js/along-app.js` — the join page (`?c=CODE`; `&edit=KEY` shows the host's edit form and Call it off)
+- `go/new.html` + `js/along-new.js` — the create page; needs an Up For It host key (host.html remembers it on the device)
+- `js/along-core.js` (pure) · `js/along-backend.js` (fake twin + demo seed) · `js/along-net.js` (transport, reuses net.js)
+- `supabase/come-along-SETUP.sql` — `ca_plans`, `ca_going` and the `ca_*` RPCs; run **after** the Up For It SQL (it calls `uf_host_id` and `uf_hash`, nothing else)
+- `ca_public()` — what the City Guide reads to show a "Going with Btown? → come along" chip only where one exists (codes, ids, times, counts; never names)
+- `data/come-along-demo.json` — snapshot of the guide feed for demo/tests when the live feed is unreachable
+- `scripts/test-along.mjs`, `scripts/playtest-along.mjs`
+
 ## Files
 
 | | |
