@@ -1,5 +1,5 @@
 {
-  "fetched": "2026-09-07T04:53:33.229Z",
+  "fetched": "2026-09-07T12:45:16.089Z",
   "events": [
     {
       "uid": "event_316204133@meetup.com",
@@ -13,6 +13,13 @@
       "title": "Live Music at Maquam Winery",
       "starts_at": "2026-09-10T21:45:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/316423161/",
+      "location": ""
+    },
+    {
+      "uid": "event_316455686@meetup.com",
+      "title": "South End Art Hop with BTown crew!!",
+      "starts_at": "2026-09-11T22:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/316455686/",
       "location": ""
     },
     {
@@ -62,13 +69,6 @@
       "title": "Pick-up Basketball",
       "starts_at": "2026-09-30T21:30:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/vtrmztyjcmbnc/",
-      "location": ""
-    },
-    {
-      "uid": "event_316356369@meetup.com",
-      "title": "BTown Coffee Club",
-      "starts_at": "2026-10-03T14:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/316356369/",
       "location": ""
     }
   ]
