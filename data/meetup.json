@@ -1,13 +1,6 @@
 {
-  "fetched": "2026-09-09T21:00:00.559Z",
+  "fetched": "2026-09-10T04:53:11.175Z",
   "events": [
-    {
-      "uid": "event_316204133@meetup.com",
-      "title": "Pick-up Basketball",
-      "starts_at": "2026-09-09T21:30:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/316204133/",
-      "location": ""
-    },
     {
       "uid": "event_316423161@meetup.com",
       "title": "Live Music at Maquam Winery",
@@ -69,6 +62,13 @@
       "title": "Pick-up Basketball",
       "starts_at": "2026-09-30T21:30:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/vtrmztyjcmbnc/",
+      "location": ""
+    },
+    {
+      "uid": "event_316356369@meetup.com",
+      "title": "BTown Coffee Club",
+      "starts_at": "2026-10-03T14:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/316356369/",
       "location": ""
     }
   ]
