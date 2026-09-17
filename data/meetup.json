@@ -1,13 +1,6 @@
 {
-  "fetched": "2026-09-16T21:24:25.997Z",
+  "fetched": "2026-09-17T05:00:24.714Z",
   "events": [
-    {
-      "uid": "event_316303423@meetup.com",
-      "title": "Pick-up Basketball",
-      "starts_at": "2026-09-16T21:30:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/316303423/",
-      "location": ""
-    },
     {
       "uid": "event_316301523@meetup.com",
       "title": "Btown Bites Young Adult group - Bluebird Barbecue",
@@ -69,6 +62,13 @@
       "title": "Pick-up Basketball",
       "starts_at": "2026-10-07T21:30:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/vtrmztyjcnbkb/",
+      "location": ""
+    },
+    {
+      "uid": "event_316403354@meetup.com",
+      "title": "BTown Coffee Club",
+      "starts_at": "2026-10-10T14:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/316403354/",
       "location": ""
     }
   ]
