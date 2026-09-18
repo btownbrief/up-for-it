@@ -16,7 +16,11 @@ jobs:
           node-version: 22
       - name: Core and backend-mirror tests
         run: node --test scripts/test-core.mjs
+      - name: Come along core and backend-mirror tests
+        run: node --test scripts/test-along.mjs
       - name: Syntax-check every module and script
         run: for f in js/*.js scripts/*.mjs; do node --check "$f"; done
       - name: Seed deck is valid JSON
         run: node -e "JSON.parse(require('fs').readFileSync('data/ideas.json','utf8'))"
+      - name: Come along demo snapshot is valid JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('data/come-along-demo.json','utf8'))"

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FBF8F2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0A111C" media="(prefers-color-scheme: dark)">
+  <title>Come along — Btown Brief</title>
+  <meta name="description" content="A bunch of Btown Brief readers are going to this. Here's where to meet, when, and who's coming. Coming alone is normal.">
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Btown Brief">
+  <meta property="og:title" content="Come along — Btown Brief">
+  <meta property="og:description" content="A group of readers is going. Meet us there; coming alone is normal.">
+  <meta property="og:image" content="https://play.btownbrief.com/up-for-it/og-image.png">
+  <meta name="twitter:card" content="summary">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="go.css">
+<!-- GoatCounter -->
+<script data-goatcounter="https://btown-brief.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <span class="brand"><a href="../">Btown Brief</a> · Come along</span>
+        <h1 id="h1">Come along</h1>
+        <p class="sub" id="sub">A bunch of us are going. You should too.</p>
+      </div>
+    </header>
+    <p class="status" id="status" aria-live="polite"></p>
+    <!-- js/along-app.js renders the plan in here -->
+    <div id="plan"></div>
+    <p class="foot">A <a href="https://www.btownbrief.com">Btown Brief</a> thing · <a href="new.html">Host one</a></p>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="../js/along-app.js"></script>
+</body>
+</html>
