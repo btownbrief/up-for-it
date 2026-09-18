@@ -1,13 +1,6 @@
 {
-  "fetched": "2026-09-17T21:29:15.539Z",
+  "fetched": "2026-09-18T04:52:40.483Z",
   "events": [
-    {
-      "uid": "event_316301523@meetup.com",
-      "title": "Btown Bites Young Adult group - Bluebird Barbecue",
-      "starts_at": "2026-09-17T22:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/316301523/",
-      "location": ""
-    },
     {
       "uid": "event_316338551@meetup.com",
       "title": "BTown Coffee Club",
@@ -58,10 +51,10 @@
       "location": ""
     },
     {
-      "uid": "event_vtrmztyjcnbkb@meetup.com",
+      "uid": "event_316602318@meetup.com",
       "title": "Pick-up Basketball",
       "starts_at": "2026-10-07T21:30:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/vtrmztyjcnbkb/",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/316602318/",
       "location": ""
     },
     {
@@ -69,6 +62,13 @@
       "title": "BTown Coffee Club",
       "starts_at": "2026-10-10T14:00:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/316403354/",
+      "location": ""
+    },
+    {
+      "uid": "event_316566783@meetup.com",
+      "title": "Apple Picking + Cider Donuts at Shelburne Orchards 🍎",
+      "starts_at": "2026-10-10T15:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/316566783/",
       "location": ""
     }
   ]
