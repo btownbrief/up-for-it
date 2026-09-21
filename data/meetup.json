@@ -1,5 +1,5 @@
 {
-  "fetched": "2026-09-21T12:59:26.420Z",
+  "fetched": "2026-09-21T22:02:27.755Z",
   "events": [
     {
       "uid": "event_316408109@meetup.com",
@@ -37,6 +37,13 @@
       "location": ""
     },
     {
+      "uid": "event_316649207@meetup.com",
+      "title": "Bike Trip",
+      "starts_at": "2026-10-03T14:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/316649207/",
+      "location": ""
+    },
+    {
       "uid": "event_316602318@meetup.com",
       "title": "Pick-up Basketball",
       "starts_at": "2026-10-07T21:30:00.000Z",
@@ -62,13 +69,6 @@
       "title": "Pub Crawl II🍺 South End Breweries",
       "starts_at": "2026-10-10T17:00:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/316566793/",
-      "location": ""
-    },
-    {
-      "uid": "event_vtrmztyjcnbsb@meetup.com",
-      "title": "Pick-up Basketball",
-      "starts_at": "2026-10-14T21:30:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/vtrmztyjcnbsb/",
       "location": ""
     }
   ]
