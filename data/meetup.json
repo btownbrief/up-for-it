@@ -1,20 +1,6 @@
 {
-  "fetched": "2026-10-03T11:48:46.607Z",
+  "fetched": "2026-10-03T16:30:01.253Z",
   "events": [
-    {
-      "uid": "event_316356369@meetup.com",
-      "title": "BTown Coffee Club",
-      "starts_at": "2026-10-03T14:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/316356369/",
-      "location": ""
-    },
-    {
-      "uid": "event_316649207@meetup.com",
-      "title": "Btown Brief Bike Trip to South Hero",
-      "starts_at": "2026-10-03T14:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/316649207/",
-      "location": ""
-    },
     {
       "uid": "event_316602318@meetup.com",
       "title": "Pick-up Basketball",
@@ -69,6 +55,13 @@
       "title": "BTown Coffee Club x Social Pulse",
       "starts_at": "2026-10-24T14:00:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/316403357/",
+      "location": ""
+    },
+    {
+      "uid": "event_vtrmztyjcnblc@meetup.com",
+      "title": "Pick-up Basketball",
+      "starts_at": "2026-10-28T21:30:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/vtrmztyjcnblc/",
       "location": ""
     }
   ]
