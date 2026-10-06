@@ -1,5 +1,5 @@
 {
-  "fetched": "2026-10-05T14:56:04.598Z",
+  "fetched": "2026-10-06T00:08:48.118Z",
   "events": [
     {
       "uid": "event_316602318@meetup.com",
@@ -37,6 +37,20 @@
       "location": ""
     },
     {
+      "uid": "event_316855303@meetup.com",
+      "title": "Ali T Live at J Ski's with Social Pulse",
+      "starts_at": "2026-10-15T23:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/316855303/",
+      "location": ""
+    },
+    {
+      "uid": "event_316855311@meetup.com",
+      "title": "Movie Night: You Can See Everything (the Elizabeth Holmes Doc)",
+      "starts_at": "2026-10-16T23:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/316855311/",
+      "location": ""
+    },
+    {
       "uid": "event_316637181@meetup.com",
       "title": "BTown Coffee Club",
       "starts_at": "2026-10-17T14:00:00.000Z",
@@ -55,20 +69,6 @@
       "title": "BTown Coffee Club x Social Pulse",
       "starts_at": "2026-10-24T14:00:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/316403357/",
-      "location": ""
-    },
-    {
-      "uid": "event_vtrmztyjcnblc@meetup.com",
-      "title": "Pick-up Basketball",
-      "starts_at": "2026-10-28T21:30:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/vtrmztyjcnblc/",
-      "location": ""
-    },
-    {
-      "uid": "event_csrdwtyjcnbpc@meetup.com",
-      "title": "BTown Coffee Club",
-      "starts_at": "2026-10-31T14:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/csrdwtyjcnbpc/",
       "location": ""
     }
   ]
