@@ -1,27 +1,6 @@
 {
-  "fetched": "2026-10-10T12:42:45.842Z",
+  "fetched": "2026-10-10T21:51:28.433Z",
   "events": [
-    {
-      "uid": "event_316403354@meetup.com",
-      "title": "BTown Coffee Club",
-      "starts_at": "2026-10-10T14:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/316403354/",
-      "location": ""
-    },
-    {
-      "uid": "event_316566783@meetup.com",
-      "title": "Apple Picking + Cider Donuts at Shelburne Orchards 🍎",
-      "starts_at": "2026-10-10T15:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/316566783/",
-      "location": ""
-    },
-    {
-      "uid": "event_316566793@meetup.com",
-      "title": "Pub Crawl II🍺 South End Breweries",
-      "starts_at": "2026-10-10T17:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/316566793/",
-      "location": ""
-    },
     {
       "uid": "event_316700115@meetup.com",
       "title": "Pick-up Basketball",
@@ -69,6 +48,27 @@
       "title": "Pick-up Basketball",
       "starts_at": "2026-10-28T21:30:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/316902566/",
+      "location": ""
+    },
+    {
+      "uid": "event_316902278@meetup.com",
+      "title": "BTown Coffee Club",
+      "starts_at": "2026-10-31T14:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/316902278/",
+      "location": ""
+    },
+    {
+      "uid": "event_ggcpbvyjcpbgb@meetup.com",
+      "title": "Pick-up Basketball",
+      "starts_at": "2026-11-04T22:30:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/ggcpbvyjcpbgb/",
+      "location": ""
+    },
+    {
+      "uid": "event_316816380@meetup.com",
+      "title": "BTown Coffee Club",
+      "starts_at": "2026-11-07T15:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/316816380/",
       "location": ""
     }
   ]
