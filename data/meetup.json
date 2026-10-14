@@ -1,5 +1,5 @@
 {
-  "fetched": "2026-10-14T17:19:59.998Z",
+  "fetched": "2026-10-14T21:47:52.350Z",
   "events": [
     {
       "uid": "event_316700115@meetup.com",
@@ -16,13 +16,6 @@
       "location": ""
     },
     {
-      "uid": "event_316855311@meetup.com",
-      "title": "Movie Night: You Can See Everything (the Elizabeth Holmes Doc)",
-      "starts_at": "2026-10-16T23:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/316855311/",
-      "location": ""
-    },
-    {
       "uid": "event_316637181@meetup.com",
       "title": "BTown Coffee Club",
       "starts_at": "2026-10-17T14:00:00.000Z",
@@ -34,6 +27,13 @@
       "title": "Pick-up Basketball",
       "starts_at": "2026-10-21T21:30:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/316803943/",
+      "location": ""
+    },
+    {
+      "uid": "event_316855311@meetup.com",
+      "title": "Movie Night: You Can See Everything (the Elizabeth Holmes Doc)",
+      "starts_at": "2026-10-23T23:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/316855311/",
       "location": ""
     },
     {
