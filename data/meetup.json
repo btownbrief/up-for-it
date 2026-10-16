@@ -1,13 +1,6 @@
 {
-  "fetched": "2026-10-15T21:31:01.973Z",
+  "fetched": "2026-10-16T04:41:57.304Z",
   "events": [
-    {
-      "uid": "event_316855303@meetup.com",
-      "title": "Ali T Live at J Ski's with Social Pulse",
-      "starts_at": "2026-10-15T23:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/316855303/",
-      "location": ""
-    },
     {
       "uid": "event_316637181@meetup.com",
       "title": "BTown Coffee Club",
@@ -51,10 +44,10 @@
       "location": ""
     },
     {
-      "uid": "event_ggcpbvyjcpbgb@meetup.com",
+      "uid": "event_317001207@meetup.com",
       "title": "Pick-up Basketball",
       "starts_at": "2026-11-04T22:30:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/ggcpbvyjcpbgb/",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/317001207/",
       "location": ""
     },
     {
@@ -69,6 +62,13 @@
       "title": "Pick-up Basketball",
       "starts_at": "2026-11-11T22:30:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/ggcpbvyjcpbpb/",
+      "location": ""
+    },
+    {
+      "uid": "event_csrdwtyjcpbsb@meetup.com",
+      "title": "BTown Coffee Club",
+      "starts_at": "2026-11-14T15:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/csrdwtyjcpbsb/",
       "location": ""
     }
   ]
