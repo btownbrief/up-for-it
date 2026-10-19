@@ -1,11 +1,18 @@
 {
-  "fetched": "2026-10-18T20:53:15.892Z",
+  "fetched": "2026-10-19T04:52:46.479Z",
   "events": [
     {
       "uid": "event_316803943@meetup.com",
       "title": "Pick-up Basketball",
       "starts_at": "2026-10-21T21:30:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/316803943/",
+      "location": ""
+    },
+    {
+      "uid": "event_317041531@meetup.com",
+      "title": "Trivia @ Citizen Cider",
+      "starts_at": "2026-10-21T22:15:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/317041531/",
       "location": ""
     },
     {
@@ -62,13 +69,6 @@
       "title": "Pick-up Basketball",
       "starts_at": "2026-11-11T22:30:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/ggcpbvyjcpbpb/",
-      "location": ""
-    },
-    {
-      "uid": "event_csrdwtyjcpbsb@meetup.com",
-      "title": "BTown Coffee Club",
-      "starts_at": "2026-11-14T15:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/csrdwtyjcpbsb/",
       "location": ""
     }
   ]
