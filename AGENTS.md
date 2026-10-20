@@ -86,14 +86,25 @@ changes in plain language. Plain static site, no build step, ES modules.
   plan per kind, and `MAX_PER_PLAN_KIND` per plan — plus-addressing variants
   count as distinct addresses.
 
+## Come along (`go/`, `ca_*`)
+
+- Same three-way mirror rule: `js/along-core.js` ↔ `supabase/come-along-SETUP.sql` ↔ `js/along-backend.js`, tests in `scripts/test-along.mjs`.
+- It borrows exactly two Up For It functions server-side (`uf_host_id`, `uf_hash`) and shares the device token and host key from `net.js`. It never reads `uf_*` tables and adds nothing to `uf_plans_public()`.
+- Privacy shape: first names + counts public; token hashed; edit key hashed, returned once. No emails in `ca_*` ever.
+- The event is a snapshot (title, url, venue, times) taken from the guide feed at create; it does not follow the feed afterwards, and only the five meeting fields are editable.
+- Expiry is computed from `event_end` (or start + 3h), never a job; `ca_sweep()` deletes 30 days after.
+- Demo (`?demo=1`) is in-memory per document load: a code minted on the create page does not exist on the join page in another tab. That is expected; the playtest asserts it.
+
 ## Before you finish
 
 ```
 node --test scripts/test-core.mjs
+node --test scripts/test-along.mjs
 for f in js/*.js scripts/*.mjs; do node --check "$f"; done
 node -e "JSON.parse(require('fs').readFileSync('data/ideas.json','utf8'))"
 bash scripts/test-sql.sh                       # needs a local Postgres 17 + psql (set PGHOST/PGPORT or pass a conninfo)
 deno check supabase/functions/uf-notify/index.ts   # if you touched the edge function
 NODE_PATH=<playwright dir> node scripts/playtest.mjs        # reader flow + screenshots
 NODE_PATH=<playwright dir> node scripts/playtest-desk.mjs   # host desk + back room
+NODE_PATH=<playwright dir> node scripts/playtest-along.mjs  # come along: create → link → join → list
 ```

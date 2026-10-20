@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#FBF8F2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0A111C" media="(prefers-color-scheme: dark)">
+  <title>Host a come-along — Btown Brief</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="go.css">
+<!-- GoatCounter -->
+<script data-goatcounter="https://btown-brief.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <span class="brand"><a href="../host.html">Host desk</a> · Come along</span>
+        <h1>Take a group to something</h1>
+        <p class="sub">Pick an event already on the calendar, say where to meet, get one link.</p>
+      </div>
+    </header>
+    <div class="steps" id="steps" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+    <p class="status" id="status" aria-live="polite"></p>
+    <!-- js/along-new.js renders the three steps in here -->
+    <div id="stage"></div>
+    <p class="foot">A <a href="https://www.btownbrief.com">Btown Brief</a> thing</p>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="../js/along-new.js"></script>
+</body>
+</html>

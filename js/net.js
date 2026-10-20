@@ -87,6 +87,10 @@ async function demoBackend() {
   }
   return demo;
 }
+// Come along (go/) reuses the transport with its own ca_* names and demo twin.
+export const rpcNetwork = networkRpc;
+export { SUPABASE_URL, SUPABASE_ANON_KEY };
+
 export function backend() {
   if (isDemo()) {
     return {
