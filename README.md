@@ -179,3 +179,5 @@ Rules of the road:
 - The call is cheap and cached nowhere; fetch on load, not on a timer.
 - The shape above is the whole contract. If you need something else, ask
   for a new RPC — don't reach for the tables (anon can't read them anyway).
+
+All rights reserved: this code is published for viewing only and is not open source (see [LICENSE](LICENSE)).
