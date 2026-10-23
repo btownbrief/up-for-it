@@ -1,5 +1,5 @@
 {
-  "fetched": "2026-10-23T17:16:22.914Z",
+  "fetched": "2026-10-23T21:30:23.735Z",
   "events": [
     {
       "uid": "event_316855311@meetup.com",
@@ -24,7 +24,7 @@
     },
     {
       "uid": "event_316902278@meetup.com",
-      "title": "BTown Coffee Club",
+      "title": "BTown Coffee Club x Social Pulse",
       "starts_at": "2026-10-31T14:00:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/316902278/",
       "location": ""
@@ -38,7 +38,7 @@
     },
     {
       "uid": "event_316816380@meetup.com",
-      "title": "BTown Coffee Club",
+      "title": "BTown Coffee Club x Social Pulse",
       "starts_at": "2026-11-07T15:00:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/316816380/",
       "location": ""
@@ -51,10 +51,10 @@
       "location": ""
     },
     {
-      "uid": "event_csrdwtyjcpbsb@meetup.com",
-      "title": "BTown Coffee Club",
+      "uid": "event_ttssbvyjcpbsb@meetup.com",
+      "title": "BTown Coffee Club x Social Pulse",
       "starts_at": "2026-11-14T15:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/csrdwtyjcpbsb/",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/ttssbvyjcpbsb/",
       "location": ""
     },
     {
@@ -65,10 +65,10 @@
       "location": ""
     },
     {
-      "uid": "event_csrdwtyjcpbcc@meetup.com",
-      "title": "BTown Coffee Club",
+      "uid": "event_ttssbvyjcpbcc@meetup.com",
+      "title": "BTown Coffee Club x Social Pulse",
       "starts_at": "2026-11-21T15:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/csrdwtyjcpbcc/",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/ttssbvyjcpbcc/",
       "location": ""
     }
   ]
