@@ -1,5 +1,5 @@
 {
-  "fetched": "2026-10-24T16:03:38.820Z",
+  "fetched": "2026-10-24T20:58:01.131Z",
   "events": [
     {
       "uid": "event_316902566@meetup.com",
@@ -10,7 +10,7 @@
     },
     {
       "uid": "event_316902278@meetup.com",
-      "title": "BTown Coffee Club x Social Pulse",
+      "title": "BTown Coffee Club",
       "starts_at": "2026-10-31T14:00:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/316902278/",
       "location": ""
@@ -24,7 +24,7 @@
     },
     {
       "uid": "event_316816380@meetup.com",
-      "title": "BTown Coffee Club x Social Pulse",
+      "title": "BTown Coffee Club",
       "starts_at": "2026-11-07T15:00:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/316816380/",
       "location": ""
@@ -37,10 +37,10 @@
       "location": ""
     },
     {
-      "uid": "event_ttssbvyjcpbsb@meetup.com",
-      "title": "BTown Coffee Club x Social Pulse",
+      "uid": "event_gbzsbvyjcpbsb@meetup.com",
+      "title": "BTown Coffee Club",
       "starts_at": "2026-11-14T15:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/ttssbvyjcpbsb/",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/gbzsbvyjcpbsb/",
       "location": ""
     },
     {
@@ -51,10 +51,10 @@
       "location": ""
     },
     {
-      "uid": "event_ttssbvyjcpbcc@meetup.com",
-      "title": "BTown Coffee Club x Social Pulse",
+      "uid": "event_gbzsbvyjcpbcc@meetup.com",
+      "title": "BTown Coffee Club",
       "starts_at": "2026-11-21T15:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/ttssbvyjcpbcc/",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/gbzsbvyjcpbcc/",
       "location": ""
     },
     {
@@ -65,10 +65,10 @@
       "location": ""
     },
     {
-      "uid": "event_ttssbvyjcpblc@meetup.com",
-      "title": "BTown Coffee Club x Social Pulse",
+      "uid": "event_gbzsbvyjcpblc@meetup.com",
+      "title": "BTown Coffee Club",
       "starts_at": "2026-11-28T15:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/ttssbvyjcpblc/",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/gbzsbvyjcpblc/",
       "location": ""
     }
   ]
