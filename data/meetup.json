@@ -1,11 +1,18 @@
 {
-  "fetched": "2026-11-02T16:20:21.262Z",
+  "fetched": "2026-11-03T01:04:21.901Z",
   "events": [
     {
       "uid": "event_317001207@meetup.com",
       "title": "Pick-up Basketball",
       "starts_at": "2026-11-04T22:30:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/317001207/",
+      "location": ""
+    },
+    {
+      "uid": "event_317262245@meetup.com",
+      "title": "Trivia at Four Quarters",
+      "starts_at": "2026-11-05T23:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/317262245/",
       "location": ""
     },
     {
@@ -37,6 +44,13 @@
       "location": ""
     },
     {
+      "uid": "event_jzkwbvyjcpbzb@meetup.com",
+      "title": "Trivia at Four Quarters",
+      "starts_at": "2026-11-19T23:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/jzkwbvyjcpbzb/",
+      "location": ""
+    },
+    {
       "uid": "event_317239328@meetup.com",
       "title": "BTown Coffee Club",
       "starts_at": "2026-11-21T15:00:00.000Z",
@@ -51,24 +65,10 @@
       "location": ""
     },
     {
-      "uid": "event_gbzsbvyjcpblc@meetup.com",
+      "uid": "event_317259749@meetup.com",
       "title": "BTown Coffee Club",
       "starts_at": "2026-11-28T15:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/gbzsbvyjcpblc/",
-      "location": ""
-    },
-    {
-      "uid": "event_ggcpbvyjcqbdb@meetup.com",
-      "title": "Pick-up Basketball",
-      "starts_at": "2026-12-02T22:30:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/ggcpbvyjcqbdb/",
-      "location": ""
-    },
-    {
-      "uid": "event_317051652@meetup.com",
-      "title": "Pick-up Basketball",
-      "starts_at": "2026-12-09T22:30:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/317051652/",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/317259749/",
       "location": ""
     }
   ]
