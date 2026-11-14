@@ -1,6 +1,13 @@
 {
-  "fetched": "2026-11-14T18:16:33.412Z",
+  "fetched": "2026-11-14T22:33:18.143Z",
   "events": [
+    {
+      "uid": "event_317431964@meetup.com",
+      "title": "Jewish Food festival",
+      "starts_at": "2026-11-15T17:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/317431964/",
+      "location": ""
+    },
     {
       "uid": "event_317197311@meetup.com",
       "title": "Pick-up Basketball",
@@ -62,13 +69,6 @@
       "title": "Pick-up Basketball",
       "starts_at": "2026-12-16T22:30:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/ggcpbvyjcqbvb/",
-      "location": ""
-    },
-    {
-      "uid": "event_jzkwbvyjcqbwb@meetup.com",
-      "title": "Trivia at Four Quarters",
-      "starts_at": "2026-12-17T23:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/jzkwbvyjcqbwb/",
       "location": ""
     }
   ]
