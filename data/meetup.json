@@ -1,18 +1,11 @@
 {
-  "fetched": "2026-11-15T18:57:27.861Z",
+  "fetched": "2026-11-16T06:46:21.839Z",
   "events": [
     {
       "uid": "event_317197311@meetup.com",
       "title": "Pick-up Basketball",
       "starts_at": "2026-11-18T22:30:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/317197311/",
-      "location": ""
-    },
-    {
-      "uid": "event_317422479@meetup.com",
-      "title": "Trivia at Four Quarters",
-      "starts_at": "2026-11-19T23:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/317422479/",
       "location": ""
     },
     {
@@ -62,6 +55,20 @@
       "title": "Pick-up Basketball",
       "starts_at": "2026-12-16T22:30:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/ggcpbvyjcqbvb/",
+      "location": ""
+    },
+    {
+      "uid": "event_lxpbcvyjcqbwb@meetup.com",
+      "title": "Trivia at Four Quarters",
+      "starts_at": "2026-12-17T23:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/lxpbcvyjcqbwb/",
+      "location": ""
+    },
+    {
+      "uid": "event_ggcpbvyjcqbfc@meetup.com",
+      "title": "Pick-up Basketball",
+      "starts_at": "2026-12-23T22:30:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/ggcpbvyjcqbfc/",
       "location": ""
     }
   ]
