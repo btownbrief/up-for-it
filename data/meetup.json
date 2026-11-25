@@ -1,20 +1,6 @@
 {
-  "fetched": "2026-11-18T07:41:37.868Z",
+  "fetched": "2026-11-25T21:49:19.428Z",
   "events": [
-    {
-      "uid": "event_317197311@meetup.com",
-      "title": "Pick-up Basketball",
-      "starts_at": "2026-11-18T22:30:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/317197311/",
-      "location": ""
-    },
-    {
-      "uid": "event_317239328@meetup.com",
-      "title": "BTown Coffee Club",
-      "starts_at": "2026-11-21T15:00:00.000Z",
-      "url": "https://www.meetup.com/burlington-social-activites-group/events/317239328/",
-      "location": ""
-    },
     {
       "uid": "event_317305491@meetup.com",
       "title": "Pick-up Basketball",
@@ -27,6 +13,13 @@
       "title": "BTown Coffee Club",
       "starts_at": "2026-11-28T15:00:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/317259749/",
+      "location": ""
+    },
+    {
+      "uid": "event_317557849@meetup.com",
+      "title": "Walk your turkey off along the bike path",
+      "starts_at": "2026-11-28T20:00:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/317557849/",
       "location": ""
     },
     {
@@ -69,6 +62,13 @@
       "title": "Pick-up Basketball",
       "starts_at": "2026-12-23T22:30:00.000Z",
       "url": "https://www.meetup.com/burlington-social-activites-group/events/ggcpbvyjcqbfc/",
+      "location": ""
+    },
+    {
+      "uid": "event_ggcpbvyjcqbnc@meetup.com",
+      "title": "Pick-up Basketball",
+      "starts_at": "2026-12-30T22:30:00.000Z",
+      "url": "https://www.meetup.com/burlington-social-activites-group/events/ggcpbvyjcqbnc/",
       "location": ""
     }
   ]
